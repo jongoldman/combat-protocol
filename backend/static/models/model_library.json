@@ -1,0 +1,72 @@
+{
+  "Punching_blender.glb": {
+    "display_name": "Punching Fighter",
+    "keywords": ["puncher", "boxer", "aggressive", "forward", "offense"],
+    "body_type": "balanced",
+    "fighting_style": "boxing",
+    "stance": "aggressive",
+    "height_range_cm": [170, 185],
+    "weight_range_kg": [70, 90],
+    "description": "Balanced fighter with aggressive punching stance"
+  },
+  "Boxing_blender.glb": {
+    "display_name": "Boxer",
+    "keywords": ["boxer", "orthodox", "classic", "hands up", "guard"],
+    "body_type": "athletic",
+    "fighting_style": "boxing",
+    "stance": "orthodox",
+    "height_range_cm": [165, 185],
+    "weight_range_kg": [65, 85],
+    "description": "Classic boxer with orthodox guard stance"
+  },
+  "Taunt_blender.glb": {
+    "display_name": "Taunting Fighter",
+    "keywords": ["confident", "showboat", "cocky", "taunt", "swagger"],
+    "body_type": "athletic",
+    "fighting_style": "showman",
+    "stance": "confident",
+    "height_range_cm": [170, 190],
+    "weight_range_kg": [70, 90],
+    "description": "Confident showboating fighter with taunting stance"
+  },
+  "Chapa-Giratoria_blender.glb": {
+    "display_name": "Spinning Kicker",
+    "keywords": ["capoeira", "kicker", "spinning", "acrobatic", "agile", "flexible"],
+    "body_type": "lean",
+    "fighting_style": "capoeira",
+    "stance": "mobile",
+    "height_range_cm": [170, 190],
+    "weight_range_kg": [60, 80],
+    "description": "Agile capoeira-style fighter with spinning kick technique"
+  },
+  "Light Hit To Head_blender.glb": {
+    "display_name": "Head Hunter",
+    "keywords": ["precision", "head hunter", "technical", "accurate", "striker"],
+    "body_type": "lean",
+    "fighting_style": "technical",
+    "stance": "precise",
+    "height_range_cm": [175, 195],
+    "weight_range_kg": [65, 85],
+    "description": "Technical striker focused on precision head strikes"
+  },
+  "Fist Fight B_blender.glb": {
+    "display_name": "Brawler",
+    "keywords": ["brawler", "street fighter", "rough", "aggressive", "wild", "scrappy"],
+    "body_type": "stocky",
+    "fighting_style": "brawling",
+    "stance": "wild",
+    "height_range_cm": [165, 180],
+    "weight_range_kg": [75, 100],
+    "description": "Stocky brawler with wild aggressive street fighting style"
+  },
+  "Left Block_blender.glb": {
+    "display_name": "Defensive Fighter",
+    "keywords": ["defensive", "blocker", "guard", "patient", "counter", "defensive"],
+    "body_type": "balanced",
+    "fighting_style": "defensive",
+    "stance": "defensive",
+    "height_range_cm": [170, 185],
+    "weight_range_kg": [70, 90],
+    "description": "Defensive fighter with strong blocking and counter-attack style"
+  }
+}

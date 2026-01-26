@@ -1,0 +1,722 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3D Fighter Prototype</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: Arial, sans-serif;
+            overflow: hidden;
+            background: #000;
+        }
+        
+        #canvas-container {
+            width: 100vw;
+            height: 100vh;
+        }
+        
+        #controls {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background: rgba(0, 0, 0, 0.8);
+            padding: 20px;
+            border-radius: 10px;
+            color: white;
+        }
+        
+        h2 {
+            margin-bottom: 15px;
+            font-size: 1.5rem;
+        }
+        
+        button {
+            display: block;
+            width: 100%;
+            padding: 10px 20px;
+            margin-bottom: 10px;
+            border: none;
+            border-radius: 5px;
+            background: #555;
+            color: white;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        button:hover {
+            background: #666;
+        }
+        
+        button.active {
+            background: #3b82f6;
+        }
+        
+        .info {
+            margin-top: 20px;
+            font-size: 0.85rem;
+            color: #999;
+        }
+        
+        .info p {
+            margin: 5px 0;
+        }
+    </style>
+</head>
+<body>
+    <div id="canvas-container"></div>
+    
+    <div id="controls">
+        <h2>3D Fighter Prototype</h2>
+        <button id="idle-btn" class="active">Idle Stance</button>
+        <button id="jab-btn">Jab</button>
+        <button id="hook-btn">Hook</button>
+        <button id="kick-btn">Kick</button>
+        <button id="block-btn">Block</button>
+        
+        <div class="info">
+            <p>✓ GPU-accelerated WebGL</p>
+            <p>✓ Real-time shadows</p>
+            <p>✓ Dynamic lighting</p>
+            <p>✓ Animated fighters</p>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script>
+        let scene, camera, renderer;
+        let leftFighter, rightFighter;
+        let currentAnimation = 'idle';
+        let time = 0;
+
+        function init() {
+            // Scene
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x1a1a1a);
+
+            // Camera
+            camera = new THREE.PerspectiveCamera(
+                50,
+                window.innerWidth / window.innerHeight,
+                0.1,
+                1000
+            );
+            camera.position.set(0, 3, 10);
+            camera.lookAt(0, 2, 0);
+
+            // Renderer
+            renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.shadowMap.enabled = true;
+            renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+            document.getElementById('canvas-container').appendChild(renderer.domElement);
+
+            // Lights
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
+            scene.add(ambientLight);
+
+            const spotLight = new THREE.SpotLight(0xffffff, 1);
+            spotLight.position.set(0, 15, 0);
+            spotLight.castShadow = true;
+            spotLight.shadow.mapSize.width = 2048;
+            spotLight.shadow.mapSize.height = 2048;
+            scene.add(spotLight);
+
+            const rimLight = new THREE.DirectionalLight(0x4444ff, 0.5);
+            rimLight.position.set(5, 5, -5);
+            scene.add(rimLight);
+
+            // Floor
+            const floorGeometry = new THREE.PlaneGeometry(20, 20);
+            const floorMaterial = new THREE.MeshStandardMaterial({
+                color: 0x2a2a2a,
+                roughness: 0.8,
+                metalness: 0.2
+            });
+            const floor = new THREE.Mesh(floorGeometry, floorMaterial);
+            floor.rotation.x = -Math.PI / 2;
+            floor.receiveShadow = true;
+            scene.add(floor);
+
+            // Ring ropes
+            const ropeGeometry = new THREE.CylinderGeometry(0.05, 0.05, 12, 16);
+            const ropeMaterial = new THREE.MeshStandardMaterial({ color: 0xcc0000 });
+            
+            for (let i = 0; i < 3; i++) {
+                const height = 0.5 + i * 0.5;
+                const rope1 = new THREE.Mesh(ropeGeometry, ropeMaterial);
+                rope1.rotation.z = Math.PI / 2;
+                rope1.position.set(0, height, -6);
+                scene.add(rope1);
+                
+                const rope2 = rope1.clone();
+                rope2.position.z = 6;
+                scene.add(rope2);
+            }
+
+            // Create fighters
+            leftFighter = createFighter(0xff4444, -3);
+            rightFighter = createFighter(0x4444ff, 3);
+            scene.add(leftFighter.group);
+            scene.add(rightFighter.group);
+
+            // Button handlers
+            document.getElementById('idle-btn').onclick = () => setAnimation('idle');
+            document.getElementById('jab-btn').onclick = () => setAnimation('jab');
+            document.getElementById('hook-btn').onclick = () => setAnimation('hook');
+            document.getElementById('kick-btn').onclick = () => setAnimation('kick');
+            document.getElementById('block-btn').onclick = () => setAnimation('block');
+
+            // Window resize
+            window.addEventListener('resize', onWindowResize);
+
+            // Start animation
+            animate();
+        }
+
+        function createFighter(color, xPosition) {
+            const group = new THREE.Group();
+            group.position.x = xPosition;
+
+            const bodyMaterial = new THREE.MeshStandardMaterial({
+                color: color,
+                roughness: 0.7,
+                metalness: 0.3
+            });
+
+            const darkMaterial = new THREE.MeshStandardMaterial({
+                color: new THREE.Color(color).multiplyScalar(0.7),
+                roughness: 0.8,
+                metalness: 0.2
+            });
+
+            // === HIPS (root of skeleton) ===
+            const hips = new THREE.Group();
+            hips.position.y = 1.0;
+            group.add(hips);
+
+            const hipsGeometry = new THREE.BoxGeometry(0.6, 0.3, 0.4);
+            const hipsMesh = new THREE.Mesh(hipsGeometry, darkMaterial);
+            hipsMesh.castShadow = true;
+            hips.add(hipsMesh);
+
+            // === SPINE (connects hips to torso) ===
+            const spine = new THREE.Group();
+            spine.position.y = 0.3;
+            hips.add(spine);
+
+            const spineGeometry = new THREE.CylinderGeometry(0.2, 0.25, 0.4, 8);
+            const spineMesh = new THREE.Mesh(spineGeometry, bodyMaterial);
+            spineMesh.position.y = 0.2;
+            spineMesh.castShadow = true;
+            spine.add(spineMesh);
+
+            // === TORSO/CHEST ===
+            const chest = new THREE.Group();
+            chest.position.y = 0.5;
+            spine.add(chest);
+
+            const chestGeometry = new THREE.BoxGeometry(0.7, 0.8, 0.45);
+            const chestMesh = new THREE.Mesh(chestGeometry, bodyMaterial);
+            chestMesh.position.y = 0.4;
+            chestMesh.castShadow = true;
+            chest.add(chestMesh);
+
+            // === NECK ===
+            const neck = new THREE.Group();
+            neck.position.y = 0.8;
+            chest.add(neck);
+
+            const neckGeometry = new THREE.CylinderGeometry(0.15, 0.18, 0.25, 8);
+            const neckMesh = new THREE.Mesh(neckGeometry, bodyMaterial);
+            neckMesh.position.y = 0.125;
+            neckMesh.castShadow = true;
+            neck.add(neckMesh);
+
+            // === HEAD ===
+            const head = new THREE.Group();
+            head.position.y = 0.25;
+            neck.add(head);
+
+            const headGeometry = new THREE.SphereGeometry(0.32, 16, 16);
+            const headMesh = new THREE.Mesh(headGeometry, bodyMaterial);
+            headMesh.position.y = 0.32;
+            headMesh.castShadow = true;
+            head.add(headMesh);
+
+            // === LEFT SHOULDER ===
+            const leftShoulder = new THREE.Group();
+            leftShoulder.position.set(-0.45, 0.6, 0);
+            chest.add(leftShoulder);
+
+            const shoulderGeometry = new THREE.SphereGeometry(0.18, 12, 12);
+            const shoulderMesh = new THREE.Mesh(shoulderGeometry, bodyMaterial);
+            shoulderMesh.castShadow = true;
+            leftShoulder.add(shoulderMesh);
+
+            // === LEFT UPPER ARM ===
+            const leftUpperArm = new THREE.Group();
+            leftUpperArm.position.y = -0.05;
+            leftShoulder.add(leftUpperArm);
+
+            const upperArmGeometry = new THREE.CylinderGeometry(0.11, 0.13, 0.5, 8);
+            const leftUpperArmMesh = new THREE.Mesh(upperArmGeometry, bodyMaterial);
+            leftUpperArmMesh.position.y = -0.25;
+            leftUpperArmMesh.castShadow = true;
+            leftUpperArm.add(leftUpperArmMesh);
+
+            // === LEFT ELBOW ===
+            const leftElbow = new THREE.Group();
+            leftElbow.position.y = -0.5;
+            leftUpperArm.add(leftElbow);
+
+            const elbowGeometry = new THREE.SphereGeometry(0.12, 10, 10);
+            const leftElbowMesh = new THREE.Mesh(elbowGeometry, darkMaterial);
+            leftElbowMesh.castShadow = true;
+            leftElbow.add(leftElbowMesh);
+
+            // === LEFT FOREARM ===
+            const leftForearm = new THREE.Group();
+            leftForearm.position.y = -0.05;
+            leftElbow.add(leftForearm);
+
+            const forearmGeometry = new THREE.CylinderGeometry(0.09, 0.11, 0.45, 8);
+            const leftForearmMesh = new THREE.Mesh(forearmGeometry, bodyMaterial);
+            leftForearmMesh.position.y = -0.225;
+            leftForearmMesh.castShadow = true;
+            leftForearm.add(leftForearmMesh);
+
+            // === LEFT HAND/GLOVE ===
+            const leftHand = new THREE.Group();
+            leftHand.position.y = -0.45;
+            leftForearm.add(leftHand);
+
+            const gloveGeometry = new THREE.SphereGeometry(0.14, 12, 12);
+            const gloveMaterial = new THREE.MeshStandardMaterial({
+                color: 0x1a1a1a,
+                roughness: 0.9
+            });
+            const leftGlove = new THREE.Mesh(gloveGeometry, gloveMaterial);
+            leftGlove.castShadow = true;
+            leftHand.add(leftGlove);
+
+            // === RIGHT SHOULDER (mirror of left) ===
+            const rightShoulder = new THREE.Group();
+            rightShoulder.position.set(0.45, 0.6, 0);
+            chest.add(rightShoulder);
+
+            const rightShoulderMesh = new THREE.Mesh(shoulderGeometry, bodyMaterial);
+            rightShoulderMesh.castShadow = true;
+            rightShoulder.add(rightShoulderMesh);
+
+            // === RIGHT UPPER ARM ===
+            const rightUpperArm = new THREE.Group();
+            rightUpperArm.position.y = -0.05;
+            rightShoulder.add(rightUpperArm);
+
+            const rightUpperArmMesh = new THREE.Mesh(upperArmGeometry, bodyMaterial);
+            rightUpperArmMesh.position.y = -0.25;
+            rightUpperArmMesh.castShadow = true;
+            rightUpperArm.add(rightUpperArmMesh);
+
+            // === RIGHT ELBOW ===
+            const rightElbow = new THREE.Group();
+            rightElbow.position.y = -0.5;
+            rightUpperArm.add(rightElbow);
+
+            const rightElbowMesh = new THREE.Mesh(elbowGeometry, darkMaterial);
+            rightElbowMesh.castShadow = true;
+            rightElbow.add(rightElbowMesh);
+
+            // === RIGHT FOREARM ===
+            const rightForearm = new THREE.Group();
+            rightForearm.position.y = -0.05;
+            rightElbow.add(rightForearm);
+
+            const rightForearmMesh = new THREE.Mesh(forearmGeometry, bodyMaterial);
+            rightForearmMesh.position.y = -0.225;
+            rightForearmMesh.castShadow = true;
+            rightForearm.add(rightForearmMesh);
+
+            // === RIGHT HAND/GLOVE ===
+            const rightHand = new THREE.Group();
+            rightHand.position.y = -0.45;
+            rightForearm.add(rightHand);
+
+            const rightGlove = new THREE.Mesh(gloveGeometry, gloveMaterial);
+            rightGlove.castShadow = true;
+            rightHand.add(rightGlove);
+
+            // === LEFT HIP ===
+            const leftHip = new THREE.Group();
+            leftHip.position.set(-0.2, -0.15, 0);
+            hips.add(leftHip);
+
+            // === LEFT THIGH ===
+            const leftThigh = new THREE.Group();
+            leftThigh.position.y = -0.05;
+            leftHip.add(leftThigh);
+
+            const thighGeometry = new THREE.CylinderGeometry(0.13, 0.15, 0.55, 10);
+            const leftThighMesh = new THREE.Mesh(thighGeometry, bodyMaterial);
+            leftThighMesh.position.y = -0.275;
+            leftThighMesh.castShadow = true;
+            leftThigh.add(leftThighMesh);
+
+            // === LEFT KNEE ===
+            const leftKnee = new THREE.Group();
+            leftKnee.position.y = -0.55;
+            leftThigh.add(leftKnee);
+
+            const kneeGeometry = new THREE.SphereGeometry(0.14, 10, 10);
+            const leftKneeMesh = new THREE.Mesh(kneeGeometry, darkMaterial);
+            leftKneeMesh.castShadow = true;
+            leftKnee.add(leftKneeMesh);
+
+            // === LEFT SHIN ===
+            const leftShin = new THREE.Group();
+            leftShin.position.y = -0.05;
+            leftKnee.add(leftShin);
+
+            const shinGeometry = new THREE.CylinderGeometry(0.11, 0.12, 0.5, 10);
+            const leftShinMesh = new THREE.Mesh(shinGeometry, bodyMaterial);
+            leftShinMesh.position.y = -0.25;
+            leftShinMesh.castShadow = true;
+            leftShin.add(leftShinMesh);
+
+            // === LEFT FOOT ===
+            const leftFoot = new THREE.Group();
+            leftFoot.position.y = -0.5;
+            leftShin.add(leftFoot);
+
+            const footGeometry = new THREE.BoxGeometry(0.15, 0.1, 0.28);
+            const leftFootMesh = new THREE.Mesh(footGeometry, darkMaterial);
+            leftFootMesh.position.set(0, -0.05, 0.06);
+            leftFootMesh.castShadow = true;
+            leftFoot.add(leftFootMesh);
+
+            // === RIGHT LEG (mirror of left) ===
+            const rightHip = new THREE.Group();
+            rightHip.position.set(0.2, -0.15, 0);
+            hips.add(rightHip);
+
+            const rightThigh = new THREE.Group();
+            rightThigh.position.y = -0.05;
+            rightHip.add(rightThigh);
+
+            const rightThighMesh = new THREE.Mesh(thighGeometry, bodyMaterial);
+            rightThighMesh.position.y = -0.275;
+            rightThighMesh.castShadow = true;
+            rightThigh.add(rightThighMesh);
+
+            const rightKnee = new THREE.Group();
+            rightKnee.position.y = -0.55;
+            rightThigh.add(rightKnee);
+
+            const rightKneeMesh = new THREE.Mesh(kneeGeometry, darkMaterial);
+            rightKneeMesh.castShadow = true;
+            rightKnee.add(rightKneeMesh);
+
+            const rightShin = new THREE.Group();
+            rightShin.position.y = -0.05;
+            rightKnee.add(rightShin);
+
+            const rightShinMesh = new THREE.Mesh(shinGeometry, bodyMaterial);
+            rightShinMesh.position.y = -0.25;
+            rightShinMesh.castShadow = true;
+            rightShin.add(rightShinMesh);
+
+            const rightFoot = new THREE.Group();
+            rightFoot.position.y = -0.5;
+            rightShin.add(rightFoot);
+
+            const rightFootMesh = new THREE.Mesh(footGeometry, darkMaterial);
+            rightFootMesh.position.set(0, -0.05, 0.06);
+            rightFootMesh.castShadow = true;
+            rightFoot.add(rightFootMesh);
+
+            return {
+                group,
+                hips,
+                spine,
+                chest,
+                neck,
+                head,
+                leftShoulder,
+                leftUpperArm,
+                leftElbow,
+                leftForearm,
+                leftHand,
+                rightShoulder,
+                rightUpperArm,
+                rightElbow,
+                rightForearm,
+                rightHand,
+                leftHip,
+                leftThigh,
+                leftKnee,
+                leftShin,
+                leftFoot,
+                rightHip,
+                rightThigh,
+                rightKnee,
+                rightShin,
+                rightFoot
+            };
+        }
+
+        function updateFighterAnimation(fighter) {
+            const { 
+                hips, spine, chest, neck, head,
+                leftShoulder, leftUpperArm, leftElbow, leftForearm, leftHand,
+                rightShoulder, rightUpperArm, rightElbow, rightForearm, rightHand,
+                leftHip, leftThigh, leftKnee, leftShin, leftFoot,
+                rightHip, rightThigh, rightKnee, rightShin, rightFoot
+            } = fighter;
+
+            // Reset all rotations
+            hips.rotation.set(0, 0, 0);
+            spine.rotation.set(0, 0, 0);
+            chest.rotation.set(0, 0, 0);
+            neck.rotation.set(0, 0, 0);
+            head.rotation.set(0, 0, 0);
+            
+            leftShoulder.rotation.set(0, 0, 0);
+            leftUpperArm.rotation.set(0, 0, 0);
+            leftElbow.rotation.set(0, 0, 0);
+            leftForearm.rotation.set(0, 0, 0);
+            
+            rightShoulder.rotation.set(0, 0, 0);
+            rightUpperArm.rotation.set(0, 0, 0);
+            rightElbow.rotation.set(0, 0, 0);
+            rightForearm.rotation.set(0, 0, 0);
+            
+            leftThigh.rotation.set(0, 0, 0);
+            leftKnee.rotation.set(0, 0, 0);
+            leftShin.rotation.set(0, 0, 0);
+            
+            rightThigh.rotation.set(0, 0, 0);
+            rightKnee.rotation.set(0, 0, 0);
+            rightShin.rotation.set(0, 0, 0);
+
+            switch (currentAnimation) {
+                case 'idle':
+                    // Subtle breathing and ready stance
+                    const breathe = Math.sin(time * 2) * 0.015;
+                    chest.scale.y = 1 + breathe;
+                    
+                    // Slightly bent knees (ready stance)
+                    leftKnee.rotation.x = 0.15;
+                    rightKnee.rotation.x = 0.15;
+                    
+                    // Guard position - hands up
+                    leftShoulder.rotation.x = -0.8;
+                    leftShoulder.rotation.z = 0.3;
+                    leftElbow.rotation.x = -1.2;
+                    
+                    rightShoulder.rotation.x = -0.8;
+                    rightShoulder.rotation.z = -0.3;
+                    rightElbow.rotation.x = -1.2;
+                    
+                    // Slight head bob
+                    head.rotation.x = Math.sin(time * 1.5) * 0.05;
+                    break;
+
+                case 'jab':
+                    // Quick jab - proper weight transfer
+                    const jabCycle = (time * 5) % 1;
+                    
+                    if (jabCycle < 0.2) {
+                        // Extension phase
+                        rightShoulder.rotation.x = -1.4;
+                        rightElbow.rotation.x = -0.2;
+                        chest.rotation.y = 0.3;
+                        spine.rotation.y = 0.2;
+                        hips.rotation.y = 0.1;
+                        
+                        // Push off back leg
+                        rightThigh.rotation.x = -0.2;
+                        rightKnee.rotation.x = 0.3;
+                        
+                        // Head protection
+                        leftShoulder.rotation.x = -1.0;
+                        leftElbow.rotation.x = -1.3;
+                    } else if (jabCycle < 0.4) {
+                        // Return phase
+                        rightShoulder.rotation.x = -0.8;
+                        rightElbow.rotation.x = -1.0;
+                        chest.rotation.y = 0;
+                        leftShoulder.rotation.x = -0.8;
+                        leftElbow.rotation.x = -1.2;
+                    } else {
+                        // Reset to guard
+                        leftShoulder.rotation.x = -0.8;
+                        leftElbow.rotation.x = -1.2;
+                        rightShoulder.rotation.x = -0.8;
+                        rightElbow.rotation.x = -1.2;
+                        leftKnee.rotation.x = 0.15;
+                        rightKnee.rotation.x = 0.15;
+                    }
+                    break;
+
+                case 'hook':
+                    // Hook with full body rotation
+                    const hookCycle = (time * 3.5) % 1;
+                    
+                    if (hookCycle < 0.15) {
+                        // Wind up
+                        hips.rotation.y = -0.4;
+                        spine.rotation.y = -0.3;
+                        chest.rotation.y = -0.2;
+                        leftShoulder.rotation.x = -0.5;
+                        leftShoulder.rotation.y = -0.8;
+                        leftElbow.rotation.x = -1.5;
+                        
+                        // Weight on back leg
+                        leftThigh.rotation.x = -0.2;
+                        leftKnee.rotation.x = 0.3;
+                    } else if (hookCycle < 0.35) {
+                        // Explosion - full rotation
+                        hips.rotation.y = 0.6;
+                        spine.rotation.y = 0.5;
+                        chest.rotation.y = 0.4;
+                        leftShoulder.rotation.x = -0.3;
+                        leftShoulder.rotation.y = 1.2;
+                        leftElbow.rotation.x = -1.3;
+                        
+                        // Weight transfer to front leg
+                        rightThigh.rotation.x = -0.3;
+                        rightKnee.rotation.x = 0.2;
+                        leftThigh.rotation.x = 0.1;
+                        
+                        // Right hand guards face
+                        rightShoulder.rotation.x = -1.2;
+                        rightElbow.rotation.x = -1.4;
+                    } else {
+                        // Recovery
+                        hips.rotation.y = 0;
+                        spine.rotation.y = 0;
+                        chest.rotation.y = 0;
+                        leftShoulder.rotation.x = -0.8;
+                        leftElbow.rotation.x = -1.2;
+                        rightShoulder.rotation.x = -0.8;
+                        rightElbow.rotation.x = -1.2;
+                        leftKnee.rotation.x = 0.15;
+                        rightKnee.rotation.x = 0.15;
+                    }
+                    break;
+
+                case 'kick':
+                    // Roundhouse kick with full mechanics
+                    const kickCycle = (time * 2.8) % 1;
+                    
+                    if (kickCycle < 0.2) {
+                        // Chamber - lift knee
+                        rightThigh.rotation.x = 1.3;
+                        rightKnee.rotation.x = -1.5;
+                        
+                        // Balance on left leg
+                        leftKnee.rotation.x = 0.2;
+                        
+                        // Rotate hips for power
+                        hips.rotation.y = -0.3;
+                        
+                        // Arms for balance
+                        leftShoulder.rotation.x = -0.5;
+                        rightShoulder.rotation.x = -0.5;
+                    } else if (kickCycle < 0.45) {
+                        // Extension - kick through
+                        rightThigh.rotation.x = 0.8;
+                        rightThigh.rotation.y = 0.6;
+                        rightKnee.rotation.x = -0.3;
+                        rightShin.rotation.x = 0.2;
+                        
+                        // Full hip rotation
+                        hips.rotation.y = 0.8;
+                        spine.rotation.y = 0.4;
+                        chest.rotation.y = 0.3;
+                        
+                        // Arms sweep for momentum
+                        leftShoulder.rotation.x = -0.3;
+                        leftShoulder.rotation.y = -0.5;
+                        rightShoulder.rotation.x = -0.3;
+                        rightShoulder.rotation.y = 0.5;
+                    } else if (kickCycle < 0.65) {
+                        // Retraction
+                        rightThigh.rotation.x = 1.0;
+                        rightKnee.rotation.x = -1.3;
+                        hips.rotation.y = 0.3;
+                    } else {
+                        // Plant and recover
+                        rightThigh.rotation.x = 0;
+                        rightKnee.rotation.x = 0.15;
+                        leftKnee.rotation.x = 0.15;
+                        hips.rotation.y = 0;
+                        spine.rotation.y = 0;
+                        chest.rotation.y = 0;
+                        leftShoulder.rotation.x = -0.8;
+                        leftElbow.rotation.x = -1.2;
+                        rightShoulder.rotation.x = -0.8;
+                        rightElbow.rotation.x = -1.2;
+                    }
+                    break;
+
+                case 'block':
+                    // Tight defensive shell
+                    leftShoulder.rotation.x = -1.5;
+                    leftShoulder.rotation.z = 0.5;
+                    leftElbow.rotation.x = -1.8;
+                    
+                    rightShoulder.rotation.x = -1.5;
+                    rightShoulder.rotation.z = -0.5;
+                    rightElbow.rotation.x = -1.8;
+                    
+                    // Tuck chin
+                    neck.rotation.x = 0.3;
+                    head.rotation.x = -0.2;
+                    
+                    // Slightly crouched
+                    spine.rotation.x = 0.1;
+                    leftKnee.rotation.x = 0.3;
+                    rightKnee.rotation.x = 0.3;
+                    break;
+            }
+        }
+
+        function setAnimation(anim) {
+            currentAnimation = anim;
+            // Update button states
+            document.querySelectorAll('#controls button').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            document.getElementById(anim + '-btn').classList.add('active');
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+            time += 0.016;
+
+            updateFighterAnimation(leftFighter);
+            updateFighterAnimation(rightFighter);
+
+            renderer.render(scene, camera);
+        }
+
+        function onWindowResize() {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        }
+
+        // Start
+        init();
+    </script>
+</body>
+</html>

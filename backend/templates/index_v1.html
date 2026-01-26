@@ -1,0 +1,725 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Combat Protocol - Live Fights</title>
+    <style>
+        :root {
+            /* Modern theme (default) */
+            --bg-color: #ffffff;
+            --text-color: #1a1a1a;
+            --controls-bg: #f8f9fa;
+            --controls-border: #e5e7eb;
+            --button-bg: linear-gradient(45deg, #ff6b6b, #ee5a6f);
+            --empty-text-color: #9ca3af;
+            --log-toggle-bg: #f3f4f6;
+            --log-toggle-color: #4b5563;
+            --log-toggle-border: #d1d5db;
+        }
+        
+        body.terminal-theme {
+            /* Terminal theme */
+            --bg-color: #0a0a0a;
+            --text-color: #00ff00;
+            --controls-bg: #1a1a1a;
+            --controls-border: #333333;
+            --button-bg: #00aa00;
+            --empty-text-color: #666666;
+            --log-toggle-bg: #1a1a1a;
+            --log-toggle-color: #00ff00;
+            --log-toggle-border: #333333;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
+            background: var(--bg-color);
+            color: var(--text-color);
+            padding: 20px;
+            min-height: 100vh;
+            font-weight: 400;
+            letter-spacing: -0.01em;
+            transition: background 0.3s ease, color 0.3s ease;
+        }
+        
+        body.terminal-theme {
+            font-family: 'Courier New', 'Monaco', monospace;
+        }
+        
+        .container {
+            max-width: 1600px;
+            width: 95%;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+        
+        h1 {
+            text-align: center;
+            margin-bottom: 2rem;
+            font-size: 3rem;
+            font-weight: 600;
+            background: linear-gradient(45deg, #ff6b6b, #ee5a6f);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            letter-spacing: -0.03em;
+            transition: all 0.3s ease;
+        }
+        
+        body.terminal-theme h1 {
+            background: none;
+            -webkit-text-fill-color: #00ffff;
+            color: #00ffff;
+            text-shadow: 0 0 10px rgba(0, 255, 255, 0.5);
+        }
+        
+        .controls {
+            background: var(--controls-bg);
+            border: 2px solid var(--controls-border);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+        
+        .theme-toggle {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            margin-left: 20px;
+            padding: 8px 16px;
+            background: var(--controls-bg);
+            border: 1px solid var(--controls-border);
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: all 0.3s ease;
+        }
+        
+        .theme-toggle:hover {
+            transform: translateY(-1px);
+        }
+        
+        .theme-toggle input {
+            display: none;
+        }
+        
+        .theme-toggle-slider {
+            width: 40px;
+            height: 20px;
+            background: #ccc;
+            border-radius: 20px;
+            position: relative;
+            transition: background 0.3s;
+        }
+        
+        .theme-toggle input:checked + .theme-toggle-slider {
+            background: #00aa00;
+        }
+        
+        .theme-toggle-slider::after {
+            content: '';
+            width: 16px;
+            height: 16px;
+            background: white;
+            border-radius: 50%;
+            position: absolute;
+            top: 2px;
+            left: 2px;
+            transition: transform 0.3s;
+        }
+        
+        .theme-toggle input:checked + .theme-toggle-slider::after {
+            transform: translateX(20px);
+        }
+        
+        button {
+            background: var(--button-bg);
+            color: white;
+            border: none;
+            padding: 15px 40px;
+            font-size: 1rem;
+            font-weight: 500;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: 0 4px 15px rgba(255, 107, 107, 0.3);
+            font-family: inherit;
+            letter-spacing: -0.01em;
+        }
+        
+        body.terminal-theme button {
+            background: #00aa00;
+            box-shadow: 0 0 10px rgba(0, 170, 0, 0.5);
+            border: 1px solid #00ff00;
+        }
+        
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(255, 107, 107, 0.5);
+        }
+        
+        button:disabled {
+            background: #666;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+        
+        #fightDisplay {
+            min-height: 500px;
+            display: flex;
+            align-items: flex-start;
+            justify-content: flex-start;
+        }
+        
+        #fightDisplay > * {
+            width: 100%;
+        }
+        
+        #fightDisplay:empty::before {
+            content: "Click 'Start Fight' to begin...";
+            color: var(--empty-text-color);
+            font-size: 1.5rem;
+            font-style: italic;
+        }
+        
+        .status {
+            margin-top: 15px;
+            padding: 12px;
+            border-radius: 8px;
+            text-align: center;
+            font-size: 1.1rem;
+            display: none;
+        }
+        
+        .status.active {
+            display: block;
+            background: rgba(255, 107, 107, 0.1);
+            border: 1px solid rgba(255, 107, 107, 0.3);
+            animation: pulse 2s ease-in-out infinite;
+        }
+        
+        .status.break {
+            background: rgba(251, 191, 36, 0.1);
+            border: 1px solid rgba(251, 191, 36, 0.3);
+        }
+        
+        .status.complete {
+            background: rgba(74, 222, 128, 0.1);
+            border: 1px solid rgba(74, 222, 128, 0.3);
+            animation: none;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.6; }
+        }
+        
+        /* Weigh-in Trash Talk Styles */
+        .weigh-in-container {
+            padding: 40px;
+            max-width: 900px;
+            margin: 0 auto;
+        }
+        
+        .trash-talk-box {
+            background: var(--controls-bg);
+            border: 2px solid var(--controls-border);
+            border-radius: 12px;
+            padding: 25px;
+            margin: 20px 0;
+            transition: all 0.3s ease;
+        }
+        
+        body.terminal-theme .trash-talk-box {
+            background: rgba(0, 255, 0, 0.05);
+            border-color: #00ff00;
+        }
+        
+        .fighter-name-talk {
+            font-size: 1.3rem;
+            font-weight: bold;
+            margin-bottom: 15px;
+            color: #ff6b6b;
+        }
+        
+        body.terminal-theme .fighter-name-talk {
+            color: #00ff00;
+        }
+        
+        .quote {
+            font-size: 1.1rem;
+            font-style: italic;
+            color: var(--text-color);
+            line-height: 1.6;
+        }
+        
+        .vs-separator {
+            text-align: center;
+            font-size: 2rem;
+            font-weight: bold;
+            color: #ff6b6b;
+            margin: 20px 0;
+        }
+        
+        body.terminal-theme .vs-separator {
+            color: #ffff00;
+        }
+        
+        .final-result {
+            background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
+            border: 3px solid #ff6b6b;
+            border-radius: 12px;
+            padding: 40px;
+            margin: 30px 0;
+            text-align: center;
+            animation: slideIn 0.5s ease-out;
+        }
+        
+        .final-result h2 {
+            font-size: 2.5rem;
+            color: #4ade80;
+            margin-bottom: 15px;
+        }
+        
+        .final-result .winner-name {
+            font-size: 3rem;
+            background: linear-gradient(45deg, #4ade80, #22c55e);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin: 20px 0;
+        }
+        
+        .final-result .method {
+            font-size: 1.5rem;
+            color: #fbbf24;
+            margin-top: 10px;
+        }
+        
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        /* Log Panel Styles */
+        .log-toggle {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: var(--log-toggle-bg);
+            color: var(--log-toggle-color);
+            border: 2px solid var(--log-toggle-border);
+            width: 50px;
+            height: 50px;
+            border-radius: 8px;
+            font-size: 1.3rem;
+            cursor: pointer;
+            z-index: 1000;
+            transition: all 0.3s;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+        
+        .log-toggle:hover {
+            background: var(--log-toggle-bg);
+            border-color: var(--log-toggle-border);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+        
+        body.terminal-theme .log-toggle {
+            box-shadow: 0 0 10px rgba(0, 255, 0, 0.3);
+        }
+        
+        .log-panel {
+            position: fixed;
+            bottom: 90px;
+            right: 20px;
+            width: 500px;
+            max-height: 400px;
+            background: #1a1a1a;
+            border: 2px solid #6366f1;
+            border-radius: 12px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.8);
+            display: none;
+            flex-direction: column;
+            z-index: 999;
+            animation: slideUp 0.3s ease-out;
+        }
+        
+        .log-panel.visible {
+            display: flex;
+        }
+        
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .log-header {
+            background: #6366f1;
+            padding: 12px 15px;
+            border-radius: 10px 10px 0 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-weight: bold;
+        }
+        
+        .log-close {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 1.2rem;
+            cursor: pointer;
+            padding: 0;
+            width: 24px;
+            height: 24px;
+            line-height: 24px;
+        }
+        
+        .log-content {
+            padding: 15px;
+            overflow-y: auto;
+            flex: 1;
+            font-family: 'SF Mono', 'Monaco', 'Courier New', monospace;
+            font-size: 0.85rem;
+            line-height: 1.6;
+        }
+        
+        .log-entry {
+            margin-bottom: 8px;
+            padding: 4px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        
+        .log-entry:last-child {
+            border-bottom: none;
+        }
+        
+        .log-timestamp {
+            color: #6366f1;
+            margin-right: 8px;
+        }
+        
+        .log-type {
+            display: inline-block;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-size: 0.75rem;
+            font-weight: bold;
+            margin-right: 8px;
+        }
+        
+        .log-type.info {
+            background: rgba(99, 102, 241, 0.2);
+            color: #a5b4fc;
+        }
+        
+        .log-type.success {
+            background: rgba(74, 222, 128, 0.2);
+            color: #86efac;
+        }
+        
+        .log-type.error {
+            background: rgba(239, 68, 68, 0.2);
+            color: #fca5a5;
+        }
+        
+        .log-type.warning {
+            background: rgba(251, 191, 36, 0.2);
+            color: #fde047;
+        }
+        
+        .log-message {
+            color: #e5e7eb;
+        }
+        
+        .log-clear {
+            margin-top: 10px;
+            padding: 6px 12px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 5px;
+            color: white;
+            cursor: pointer;
+            font-size: 0.85rem;
+        }
+        
+        .log-clear:hover {
+            background: rgba(255, 255, 255, 0.15);
+        }
+        
+        /* Dynamically injected CSS will go here */
+        #dynamicStyles {
+            /* Placeholder for fight frame styles */
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>⚔️ COMBAT PROTOCOL ⚔️</h1>
+        
+        <div class="controls">
+            <button id="startBtn" onclick="startFight()">⚡ Start Fight ⚡</button>
+            <label class="theme-toggle">
+                <span>🖥️ Terminal Mode</span>
+                <input type="checkbox" id="themeToggle" onchange="toggleTheme()">
+                <div class="theme-toggle-slider"></div>
+            </label>
+            <div id="status" class="status"></div>
+        </div>
+        
+        <div id="fightDisplay"></div>
+    </div>
+    
+    <!-- Log Panel -->
+    <button class="log-toggle" onclick="toggleLog()" title="Toggle Debug Log">📋</button>
+    <div class="log-panel" id="logPanel">
+        <div class="log-header">
+            <span>🔍 Debug Log</span>
+            <button class="log-close" onclick="toggleLog()">✕</button>
+        </div>
+        <div class="log-content" id="logContent">
+            <div class="log-entry">
+                <span class="log-type info">INFO</span>
+                <span class="log-message">Log initialized. Ready to track fight events.</span>
+            </div>
+        </div>
+        <button class="log-clear" onclick="clearLog()">Clear Log</button>
+    </div>
+    
+    <style id="dynamicStyles"></style>
+    
+    <script>
+        let eventSource = null;
+        
+        // Theme Management
+        function toggleTheme() {
+            const body = document.body;
+            const toggle = document.getElementById('themeToggle');
+            
+            if (toggle.checked) {
+                body.classList.add('terminal-theme');
+                localStorage.setItem('theme', 'terminal');
+            } else {
+                body.classList.remove('terminal-theme');
+                localStorage.setItem('theme', 'modern');
+            }
+        }
+        
+        // Load saved theme preference on page load
+        window.addEventListener('DOMContentLoaded', () => {
+            const savedTheme = localStorage.getItem('theme');
+            const toggle = document.getElementById('themeToggle');
+            
+            if (savedTheme === 'terminal') {
+                toggle.checked = true;
+                document.body.classList.add('terminal-theme');
+            }
+        });
+        
+        // Log Management Functions
+        function addLog(type, message) {
+            const logContent = document.getElementById('logContent');
+            const timestamp = new Date().toLocaleTimeString();
+            
+            const entry = document.createElement('div');
+            entry.className = 'log-entry';
+            entry.innerHTML = `
+                <span class="log-timestamp">[${timestamp}]</span>
+                <span class="log-type ${type}">${type.toUpperCase()}</span>
+                <span class="log-message">${message}</span>
+            `;
+            
+            logContent.appendChild(entry);
+            
+            // Auto-scroll to bottom
+            logContent.scrollTop = logContent.scrollHeight;
+        }
+        
+        function toggleLog() {
+            const logPanel = document.getElementById('logPanel');
+            logPanel.classList.toggle('visible');
+        }
+        
+        function clearLog() {
+            const logContent = document.getElementById('logContent');
+            logContent.innerHTML = `
+                <div class="log-entry">
+                    <span class="log-type info">INFO</span>
+                    <span class="log-message">Log cleared.</span>
+                </div>
+            `;
+        }
+        
+        function startFight() {
+            const display = document.getElementById('fightDisplay');
+            const startBtn = document.getElementById('startBtn');
+            const status = document.getElementById('status');
+            const dynamicStyles = document.getElementById('dynamicStyles');
+            
+            addLog('info', 'Starting new fight...');
+            
+            // Disable button
+            startBtn.disabled = true;
+            status.className = 'status active';
+            status.textContent = '🥊 Fight in progress...';
+            
+            // Close existing connection
+            if (eventSource) {
+                addLog('info', 'Closing previous connection');
+                eventSource.close();
+            }
+            
+            // Clear display
+            display.innerHTML = '';
+            
+            // Connect to SSE endpoint
+            addLog('info', 'Connecting to server: /api/simulate/somchai/nongo');
+            eventSource = new EventSource('/api/simulate/somchai/nongo');
+            
+            eventSource.onmessage = function(event) {
+                const data = JSON.parse(event.data);
+                addLog('info', `Received message type: ${data.type}`);
+                
+                if (data.type === 'keepalive') {
+                    // Ignore keepalive pings (but log them)
+                    addLog('info', 'Keepalive ping received');
+                    return;
+                    
+                } else if (data.type === 'setup') {
+                    // Inject CSS
+                    dynamicStyles.textContent = data.css;
+                    addLog('success', 'Fight styles loaded');
+                    
+                } else if (data.type === 'weigh_in') {
+                    // Show weigh-in trash talk
+                    addLog('success', 'Weigh-in trash talk generated');
+                    display.innerHTML = `
+                        <div class="weigh-in-container">
+                            <h2 style="text-align: center; color: var(--text-color); margin-bottom: 30px;">
+                                🎤 WEIGH-IN FACE-OFF 🎤
+                            </h2>
+                            <div class="trash-talk-box fighter-a-talk">
+                                <div class="fighter-name-talk">${data.fighter_a_name}</div>
+                                <div class="quote">"${data.fighter_a_quote}"</div>
+                            </div>
+                            <div class="vs-separator">VS</div>
+                            <div class="trash-talk-box fighter-b-talk">
+                                <div class="fighter-name-talk">${data.fighter_b_name}</div>
+                                <div class="quote">"${data.fighter_b_quote}"</div>
+                            </div>
+                            <div style="text-align: center; margin-top: 30px; color: var(--text-color); font-style: italic;">
+                                Fight starting soon...
+                            </div>
+                        </div>
+                    `;
+                    
+                } else if (data.type === 'frame') {
+                    // Update display with new frame
+                    display.innerHTML = data.html;
+                    // Don't log every frame, too verbose
+                    
+                } else if (data.type === 'break') {
+                    // Show break status
+                    status.className = 'status active break';
+                    status.textContent = `⏸️ ${data.text}`;
+                    addLog('info', `Round break: ${data.text}`);
+                    
+                } else if (data.type === 'error') {
+                    // Handle server-side errors
+                    eventSource.close();
+                    startBtn.disabled = false;
+                    status.className = 'status active';
+                    status.style.background = 'rgba(255, 0, 0, 0.1)';
+                    status.style.borderColor = 'rgba(255, 0, 0, 0.3)';
+                    status.textContent = `❌ ${data.message}`;
+                    
+                    addLog('error', `Server error: ${data.message}`);
+                    
+                    display.innerHTML = `
+                        <div class="final-result" style="border-color: #ef4444;">
+                            <h2 style="color: #ef4444;">⚠️ ERROR ⚠️</h2>
+                            <div style="color: #fbbf24; font-size: 1.2rem; margin-top: 20px;">
+                                ${data.message}
+                            </div>
+                            <div style="color: #aaa; font-size: 0.9rem; margin-top: 20px;">
+                                Check the debug log (📋 button) for more details
+                            </div>
+                        </div>
+                    `;
+                    
+                } else if (data.type === 'finish') {
+                    // Show final result
+                    eventSource.close();
+                    
+                    addLog('success', `Fight complete! Winner: ${data.winner} by ${data.method}`);
+                    
+                    display.innerHTML = `
+                        <div class="final-result">
+                            <h2>🏆 FIGHT COMPLETE 🏆</h2>
+                            <div class="winner-name">${data.winner}</div>
+                            <div class="method">by ${data.method}</div>
+                        </div>
+                    `;
+                    
+                    status.className = 'status active complete';
+                    status.textContent = '✅ Fight complete!';
+                    startBtn.disabled = false;
+                    
+                    setTimeout(() => {
+                        status.className = 'status';
+                    }, 5000);
+                }
+            };
+            
+            eventSource.onerror = function(error) {
+                console.error('SSE Connection Error:', error);
+                console.log('ReadyState:', eventSource.readyState);
+                
+                addLog('error', `Connection error. ReadyState: ${eventSource.readyState}`);
+                
+                eventSource.close();
+                startBtn.disabled = false;
+                status.className = 'status active';
+                status.style.background = 'rgba(255, 0, 0, 0.1)';
+                status.style.borderColor = 'rgba(255, 0, 0, 0.3)';
+                status.textContent = '❌ Connection error - check debug log (📋)';
+                
+                display.innerHTML = `
+                    <div class="final-result" style="border-color: #ef4444;">
+                        <h2 style="color: #ef4444;">⚠️ CONNECTION ERROR ⚠️</h2>
+                        <div style="color: #fbbf24; font-size: 1.2rem; margin-top: 20px;">
+                            The connection to the server was interrupted
+                        </div>
+                        <div style="color: #aaa; font-size: 0.9rem; margin-top: 20px;">
+                            This might be a timeout or network issue. Check the debug log (📋 button) for details.
+                        </div>
+                    </div>
+                `;
+            };
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="robots" content="noindex, nofollow">
+    <title>Combat Protocol - 3D Model Test</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            color: #fff;
+            overflow: hidden;
+        }
+
+        #canvas-container {
+            width: 100vw;
+            height: 100vh;
+            position: relative;
+        }
+
+        #info-panel {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background: rgba(0, 0, 0, 0.8);
+            padding: 20px;
+            border-radius: 10px;
+            border: 2px solid #00ff88;
+            max-width: 300px;
+            z-index: 100;
+        }
+
+        #info-panel h2 {
+            margin-bottom: 15px;
+            color: #00ff88;
+            font-size: 18px;
+        }
+
+        .control-group {
+            margin-bottom: 15px;
+        }
+
+        .control-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-size: 14px;
+            color: #aaa;
+        }
+
+        button {
+            background: #00ff88;
+            color: #1a1a2e;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 14px;
+            transition: all 0.2s;
+            width: 100%;
+            margin-bottom: 10px;
+        }
+
+        button:hover {
+            background: #00cc6a;
+            transform: translateY(-2px);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        #status {
+            font-size: 12px;
+            color: #00ff88;
+            margin-top: 10px;
+            padding: 10px;
+            background: rgba(0, 255, 136, 0.1);
+            border-radius: 5px;
+        }
+
+        .error {
+            color: #ff4444 !important;
+            background: rgba(255, 68, 68, 0.1) !important;
+        }
+
+        .slider-container {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        input[type="range"] {
+            flex: 1;
+            height: 6px;
+            border-radius: 3px;
+            background: #333;
+            outline: none;
+            -webkit-appearance: none;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: #00ff88;
+            cursor: pointer;
+        }
+
+        input[type="range"]::-moz-range-thumb {
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: #00ff88;
+            cursor: pointer;
+            border: none;
+        }
+
+        .value-display {
+            min-width: 40px;
+            text-align: right;
+            font-family: monospace;
+        }
+    </style>
+</head>
+<body>
+    <div id="canvas-container"></div>
+    
+    <div id="info-panel">
+        <h2>🥊 Fighter Model Test</h2>
+        
+        <div class="control-group">
+            <button id="playBtn">▶️ Play Animation</button>
+            <button id="pauseBtn">⏸️ Pause Animation</button>
+            <button id="resetBtn">🔄 Reset Camera</button>
+        </div>
+
+        <div class="control-group">
+            <label>Animation Speed</label>
+            <div class="slider-container">
+                <input type="range" id="speedSlider" min="0.1" max="3" step="0.1" value="1">
+                <span class="value-display" id="speedValue">1.0x</span>
+            </div>
+        </div>
+
+        <div class="control-group">
+            <label>Model Scale</label>
+            <div class="slider-container">
+                <input type="range" id="scaleSlider" min="0.5" max="3" step="0.1" value="1">
+                <span class="value-display" id="scaleValue">1.0x</span>
+            </div>
+        </div>
+
+        <div id="status">Loading model...</div>
+    </div>
+
+    <script type="importmap">
+    {
+        "imports": {
+            "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+            "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+        }
+    }
+    </script>
+
+    <script type="module">
+        import * as THREE from 'three';
+        import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+        import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+        // Scene setup
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x1a1a2e);
+        scene.fog = new THREE.Fog(0x1a1a2e, 10, 50);
+
+        // Camera
+        const camera = new THREE.PerspectiveCamera(
+            45,
+            window.innerWidth / window.innerHeight,
+            0.1,
+            1000
+        );
+        camera.position.set(0, 1.5, 15);  // Much farther back (was 8, now 15)
+
+        // Renderer
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(window.devicePixelRatio);
+        renderer.shadowMap.enabled = true;
+        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+        document.getElementById('canvas-container').appendChild(renderer.domElement);
+
+        // Orbit controls
+        const controls = new OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true;
+        controls.dampingFactor = 0.05;
+        controls.minDistance = 5;     // Increased from 3
+        controls.maxDistance = 50;    // Increased from 20
+        controls.target.set(0, 1, 0);
+
+        // Lighting
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
+        scene.add(ambientLight);
+
+        const directionalLight = new THREE.DirectionalLight(0xffffff, 1);
+        directionalLight.position.set(5, 10, 5);
+        directionalLight.castShadow = true;
+        directionalLight.shadow.mapSize.width = 2048;
+        directionalLight.shadow.mapSize.height = 2048;
+        scene.add(directionalLight);
+
+        const fillLight = new THREE.DirectionalLight(0x4444ff, 0.3);
+        fillLight.position.set(-5, 5, -5);
+        scene.add(fillLight);
+
+        // Ground plane
+        const groundGeometry = new THREE.PlaneGeometry(20, 20);
+        const groundMaterial = new THREE.MeshStandardMaterial({ 
+            color: 0x0a0a0f,
+            roughness: 0.8,
+            metalness: 0.2
+        });
+        const ground = new THREE.Mesh(groundGeometry, groundMaterial);
+        ground.rotation.x = -Math.PI / 2;
+        ground.receiveShadow = true;
+        scene.add(ground);
+
+        // Grid helper
+        const gridHelper = new THREE.GridHelper(20, 20, 0x00ff88, 0x003322);
+        gridHelper.position.y = 0.01;
+        scene.add(gridHelper);
+
+        // Model loading
+        let mixer = null;
+        let model = null;
+        let animations = [];
+        let currentAction = null;
+
+        const loader = new GLTFLoader();
+        const statusEl = document.getElementById('status');
+
+        // Update this path to match your GLB file location
+        const modelPath = '/static/models/Punching_blender.glb';
+
+        loader.load(
+            modelPath,
+            (gltf) => {
+                model = gltf.scene;
+                
+                // Center and scale model
+                const box = new THREE.Box3().setFromObject(model);
+                const center = box.getCenter(new THREE.Vector3());
+                const size = box.getSize(new THREE.Vector3());
+                
+                // Auto-scale model to a reasonable height (target 1.8m for human)
+                const targetHeight = 1.8;
+                const currentHeight = size.y;
+                const scaleFactor = targetHeight / currentHeight;
+                
+                console.log('Model scaling:', {
+                    currentHeight: currentHeight.toFixed(2),
+                    targetHeight: targetHeight,
+                    scaleFactor: scaleFactor.toFixed(3)
+                });
+                
+                model.scale.set(scaleFactor, scaleFactor, scaleFactor);
+                
+                // Re-calculate box after scaling
+                box.setFromObject(model);
+                const newCenter = box.getCenter(new THREE.Vector3());
+                
+                model.position.x = -newCenter.x;
+                model.position.y = -box.min.y; // Put feet on ground
+                model.position.z = -newCenter.z;
+                
+                // Enable shadows
+                model.traverse((node) => {
+                    if (node.isMesh) {
+                        node.castShadow = true;
+                        node.receiveShadow = true;
+                    }
+                });
+                
+                scene.add(model);
+                
+                // Setup animations
+                if (gltf.animations && gltf.animations.length > 0) {
+                    mixer = new THREE.AnimationMixer(model);
+                    animations = gltf.animations;
+                    currentAction = mixer.clipAction(animations[0]);
+                    
+                    // IMPORTANT: Set to loop!
+                    currentAction.setLoop(THREE.LoopRepeat);
+                    currentAction.clampWhenFinished = false;
+                    currentAction.play();
+                    
+                    const duration = animations[0].duration;
+                    const tracks = animations[0].tracks.length;
+                    
+                    statusEl.textContent = `✅ Loaded! Duration: ${duration.toFixed(2)}s, ${tracks} tracks`;
+                    statusEl.classList.remove('error');
+                    
+                    console.log('Animation info:', {
+                        duration: duration,
+                        tracks: tracks,
+                        name: animations[0].name
+                    });
+                } else {
+                    statusEl.textContent = '⚠️ Model loaded but no animations found';
+                }
+            },
+            (progress) => {
+                const percent = (progress.loaded / progress.total * 100).toFixed(0);
+                statusEl.textContent = `Loading... ${percent}%`;
+            },
+            (error) => {
+                console.error('Error loading model:', error);
+                statusEl.textContent = `❌ Error loading model. Check console for details.`;
+                statusEl.classList.add('error');
+            }
+        );
+
+        // Controls
+        document.getElementById('playBtn').addEventListener('click', () => {
+            if (currentAction) {
+                currentAction.paused = false;
+                currentAction.play();
+                statusEl.textContent = '▶️ Playing animation';
+            }
+        });
+
+        document.getElementById('pauseBtn').addEventListener('click', () => {
+            if (currentAction) {
+                currentAction.paused = true;
+                statusEl.textContent = '⏸️ Animation paused';
+            }
+        });
+
+        document.getElementById('resetBtn').addEventListener('click', () => {
+            camera.position.set(0, 1.5, 5);
+            controls.target.set(0, 1, 0);
+            controls.update();
+            statusEl.textContent = '🔄 Camera reset';
+        });
+
+        document.getElementById('speedSlider').addEventListener('input', (e) => {
+            const speed = parseFloat(e.target.value);
+            document.getElementById('speedValue').textContent = speed.toFixed(1) + 'x';
+            if (currentAction) {
+                currentAction.timeScale = speed;
+            }
+        });
+
+        document.getElementById('scaleSlider').addEventListener('input', (e) => {
+            const scale = parseFloat(e.target.value);
+            document.getElementById('scaleValue').textContent = scale.toFixed(1) + 'x';
+            if (model) {
+                model.scale.set(scale, scale, scale);
+            }
+        });
+
+        // Animation loop
+        const clock = new THREE.Clock();
+        let frameCount = 0;
+        
+        function animate() {
+            requestAnimationFrame(animate);
+            
+            const delta = clock.getDelta();
+            
+            if (mixer) {
+                mixer.update(delta);
+                
+                // Debug every 60 frames
+                frameCount++;
+                if (frameCount % 60 === 0 && currentAction) {
+                    console.log('Animation debug:', {
+                        time: currentAction.time.toFixed(2),
+                        isRunning: currentAction.isRunning(),
+                        paused: currentAction.paused,
+                        enabled: currentAction.enabled,
+                        weight: currentAction.weight,
+                        timeScale: currentAction.timeScale
+                    });
+                }
+            }
+            
+            controls.update();
+            renderer.render(scene, camera);
+        }
+
+        // Handle window resize
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        // Start animation loop
+        animate();
+    </script>
+</body>
+</html>

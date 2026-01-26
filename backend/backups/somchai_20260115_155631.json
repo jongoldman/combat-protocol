@@ -1,0 +1,47 @@
+{
+  "id": "fighter_001",
+  "name": "Somchai Petchyindee",
+  "discipline": "Muay Thai",
+  "physical": {
+    "height_cm": 175,
+    "weight_kg": 70,
+    "age": 25,
+    "muscle_mass_percent": 75,
+    "fast_twitch_ratio": 60
+  },
+  "training": {
+    "striking_hours": 800,
+    "clinch_hours": 500,
+    "cardio_hours": 400,
+    "sparring_hours": 600
+  },
+  "style": {
+    "body_attack_preference": 30.0,
+    "leg_kick_tendency": 20.0,
+    "power_punch_frequency": 40.0
+  },
+  "durability": {
+    "head_durability": 70.0,
+    "body_durability": 70.0,
+    "leg_durability": 70.0,
+    "recovery_rate": 60.0
+  },
+  "personality": {
+    "trash_talk_frequency": 50.0,
+    "confidence": 60.0,
+    "aggression": 50.0,
+    "respect": 60.0,
+    "humor": 40.0,
+    "verbosity": 50.0
+  },
+  "derived_stats": {
+    "power": 36.2,
+    "speed": 61.0,
+    "cardio": 51.0,
+    "chin": 75.9,
+    "technique": 46.0,
+    "clinch": 50.0,
+    "defense": 46.1,
+    "fight_iq": 48.5
+  }
+}

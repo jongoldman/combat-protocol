@@ -1,0 +1,664 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="robots" content="noindex, nofollow">
+    <title>Combat Protocol - Dynamic 3D Models</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #f5f5f5;
+            min-height: 100vh;
+            color: #333;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        header {
+            text-align: center;
+            padding: 20px 0 30px;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            background: linear-gradient(90deg, #dc2626, #ea580c);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 5px;
+        }
+
+        .subtitle {
+            color: #666;
+            font-size: 0.9rem;
+        }
+
+        /* Fighter Selection */
+        .fighter-select {
+            display: flex;
+            justify-content: center;
+            gap: 40px;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+        }
+
+        .fighter-slot {
+            background: #fff;
+            border: 2px solid #e0e0e0;
+            border-radius: 12px;
+            padding: 20px;
+            min-width: 200px;
+            text-align: center;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        }
+
+        .fighter-slot.red { border-color: #ef4444; }
+        .fighter-slot.blue { border-color: #3b82f6; }
+
+        .fighter-slot h3 {
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-bottom: 10px;
+            color: #666;
+        }
+
+        .fighter-slot.red h3 { color: #dc2626; }
+        .fighter-slot.blue h3 { color: #2563eb; }
+
+        select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            background: #fff;
+            color: #333;
+            font-size: 1rem;
+            cursor: pointer;
+        }
+
+        /* 3D PREVIEW SECTION */
+        .preview-3d-container {
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            border-radius: 12px;
+            margin: 30px 0;
+            padding: 20px;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.2);
+        }
+
+        .preview-3d-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            color: #fff;
+        }
+
+        .preview-3d-header h2 {
+            font-size: 1.3rem;
+            color: #00ff88;
+        }
+
+        .preview-toggle-btn {
+            background: rgba(255, 255, 255, 0.1);
+            color: #fff;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: all 0.2s;
+        }
+
+        .preview-toggle-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        #canvas-container {
+            width: 100%;
+            height: 500px;
+            position: relative;
+            border-radius: 8px;
+            overflow: hidden;
+            background: #0a0a0f;
+        }
+
+        #canvas-container.hidden {
+            display: none;
+        }
+
+        .fighter-3d-labels {
+            position: absolute;
+            top: 20px;
+            left: 0;
+            right: 0;
+            display: flex;
+            justify-content: space-around;
+            pointer-events: none;
+            z-index: 10;
+        }
+
+        .fighter-3d-label {
+            background: rgba(0, 0, 0, 0.7);
+            padding: 10px 20px;
+            border-radius: 8px;
+            border: 2px solid;
+            font-weight: bold;
+            color: #fff;
+        }
+
+        .fighter-3d-label.red { border-color: #ef4444; }
+        .fighter-3d-label.blue { border-color: #3b82f6; }
+
+        .preview-controls {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-top: 15px;
+            flex-wrap: wrap;
+        }
+
+        .preview-control-btn {
+            background: #00ff88;
+            color: #1a1a2e;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 0.85rem;
+            transition: all 0.2s;
+        }
+
+        .preview-control-btn:hover {
+            background: #00cc6a;
+            transform: translateY(-1px);
+        }
+
+        .preview-control-btn:active {
+            transform: translateY(0);
+        }
+
+        /* Loading indicator */
+        .loading-indicator {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0, 0, 0, 0.8);
+            color: #00ff88;
+            padding: 20px 40px;
+            border-radius: 8px;
+            font-weight: bold;
+            z-index: 100;
+            display: none;
+        }
+
+        .loading-indicator.active {
+            display: block;
+        }
+
+        /* Fight Button */
+        .fight-btn {
+            display: block;
+            width: 200px;
+            margin: 30px auto;
+            padding: 15px 40px;
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: #fff;
+            background: linear-gradient(90deg, #dc2626, #ea580c);
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(220, 38, 38, 0.3);
+            transition: all 0.2s;
+        }
+
+        .fight-btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            box-shadow: none;
+        }
+
+        .fight-btn:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(220, 38, 38, 0.4);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>⚔️ COMBAT PROTOCOL</h1>
+            <p class="subtitle">Dynamic 3D Model Integration Demo</p>
+        </header>
+
+        <div class="fighter-select">
+            <div class="fighter-slot red">
+                <h3>RED CORNER</h3>
+                <select id="fighter-a">
+                    <option value="">Select Fighter...</option>
+                </select>
+            </div>
+            <div class="fighter-slot blue">
+                <h3>BLUE CORNER</h3>
+                <select id="fighter-b">
+                    <option value="">Select Fighter...</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- 3D PREVIEW SECTION -->
+        <div class="preview-3d-container" id="preview-3d-section">
+            <div class="preview-3d-header">
+                <h2>🥊 Fighter Preview</h2>
+                <button class="preview-toggle-btn" id="toggle-3d">Hide 3D View</button>
+            </div>
+            <div id="canvas-container">
+                <div class="loading-indicator" id="loading-indicator">Loading Model...</div>
+                <div class="fighter-3d-labels">
+                    <div class="fighter-3d-label red" id="label-fighter-a">Select Red Corner</div>
+                    <div class="fighter-3d-label blue" id="label-fighter-b">Select Blue Corner</div>
+                </div>
+            </div>
+            <div class="preview-controls">
+                <button class="preview-control-btn" id="preview-play">▶️ Play</button>
+                <button class="preview-control-btn" id="preview-pause">⏸️ Pause</button>
+                <button class="preview-control-btn" id="preview-reset">🔄 Reset Camera</button>
+            </div>
+        </div>
+
+        <!-- Fight Button -->
+        <button class="fight-btn" id="fight-btn" disabled>FIGHT!</button>
+    </div>
+
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+                "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+            }
+        }
+    </script>
+
+    <script type="module">
+        import * as THREE from 'three';
+        import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+        import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+        // =====================================================
+        // THREE.JS SCENE SETUP
+        // =====================================================
+        const canvasContainer = document.getElementById('canvas-container');
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x0a0a0f);
+
+        const camera = new THREE.PerspectiveCamera(
+            45,
+            canvasContainer.clientWidth / canvasContainer.clientHeight,
+            0.1,
+            1000
+        );
+        camera.position.set(0, 1.5, 25);
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(canvasContainer.clientWidth, canvasContainer.clientHeight);
+        renderer.shadowMap.enabled = true;
+        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+        canvasContainer.appendChild(renderer.domElement);
+
+        const controls = new OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true;
+        controls.dampingFactor = 0.05;
+        controls.minDistance = 5;
+        controls.maxDistance = 50;
+        controls.target.set(0, 1, 0);
+        controls.update();
+
+        // Lighting
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+        scene.add(ambientLight);
+
+        const mainLight = new THREE.DirectionalLight(0xffffff, 0.8);
+        mainLight.position.set(10, 20, 10);
+        mainLight.castShadow = true;
+        mainLight.shadow.camera.left = -20;
+        mainLight.shadow.camera.right = 20;
+        mainLight.shadow.camera.top = 20;
+        mainLight.shadow.camera.bottom = -20;
+        mainLight.shadow.mapSize.width = 2048;
+        mainLight.shadow.mapSize.height = 2048;
+        scene.add(mainLight);
+
+        const fillLight = new THREE.DirectionalLight(0x4488ff, 0.3);
+        fillLight.position.set(-10, 10, -10);
+        scene.add(fillLight);
+
+        const rimLight = new THREE.DirectionalLight(0xff8844, 0.3);
+        rimLight.position.set(0, 5, -15);
+        scene.add(rimLight);
+
+        // Ground
+        const groundGeometry = new THREE.CircleGeometry(15, 64);
+        const groundMaterial = new THREE.MeshStandardMaterial({
+            color: 0x1a1a2e,
+            roughness: 0.8,
+            metalness: 0.2
+        });
+        const ground = new THREE.Mesh(groundGeometry, groundMaterial);
+        ground.rotation.x = -Math.PI / 2;
+        ground.receiveShadow = true;
+        scene.add(ground);
+
+        // Grid
+        const gridHelper = new THREE.GridHelper(30, 30, 0x00ff88, 0x003322);
+        gridHelper.position.y = 0.01;
+        scene.add(gridHelper);
+
+        // =====================================================
+        // FIGHTER MODEL MANAGEMENT
+        // =====================================================
+        
+        // Store fighter models and their mixers
+        const fighters = {
+            A: {
+                model: null,
+                mixer: null,
+                action: null,
+                position: -4,  // Left side
+                rotation: 0,
+                color: 0xFF6B35  // Anthropic orange / Red corner
+            },
+            B: {
+                model: null,
+                mixer: null,
+                action: null,
+                position: 4,  // Right side
+                rotation: Math.PI,  // Face left
+                color: 0x10A37F  // OpenAI teal / Blue corner
+            }
+        };
+
+        const loader = new GLTFLoader();
+        const loadingIndicator = document.getElementById('loading-indicator');
+
+        /**
+         * Load a 3D model for a specific fighter corner
+         * @param {string} fighterId - The fighter's ID
+         * @param {string} corner - Either 'A' (red) or 'B' (blue)
+         */
+        async function loadFighterModel(fighterId, corner) {
+            if (!fighterId) {
+                console.log(`No fighter selected for corner ${corner}`);
+                return;
+            }
+
+            try {
+                // Show loading indicator
+                loadingIndicator.classList.add('active');
+                console.log(`Loading fighter ${fighterId} for corner ${corner}...`);
+
+                // Fetch fighter data
+                const response = await fetch(`/api/fighter/${fighterId}`);
+                if (!response.ok) {
+                    throw new Error(`Failed to fetch fighter: ${response.statusText}`);
+                }
+                
+                const fighterData = await response.json();
+                console.log(`Fighter data:`, fighterData);
+
+                // Get model filename (with fallback to default)
+                const modelFilename = fighterData.model_3d || 'Punching_blender.glb';
+                const modelPath = `/static/models/${modelFilename}`;
+                console.log(`Loading model: ${modelPath}`);
+
+                // Get shorts color (with fallback)
+                const shortsColor = fighterData.shorts_color || null;
+
+                // Remove old model if exists
+                if (fighters[corner].model) {
+                    console.log(`Removing old model for corner ${corner}`);
+                    scene.remove(fighters[corner].model);
+                    fighters[corner].model = null;
+                    fighters[corner].mixer = null;
+                    fighters[corner].action = null;
+                }
+
+                // Load new model
+                loader.load(
+                    modelPath,
+                    (gltf) => {
+                        console.log(`Model loaded successfully for corner ${corner}`);
+                        
+                        const model = gltf.scene;
+                        fighters[corner].model = model;
+
+                        // Scale model to consistent height (1.8 units)
+                        const box = new THREE.Box3().setFromObject(model);
+                        const size = box.getSize(new THREE.Vector3());
+                        const scaleFactor = 1.8 / size.y;
+                        model.scale.set(scaleFactor, scaleFactor, scaleFactor);
+
+                        // Recalculate bounding box after scaling
+                        box.setFromObject(model);
+                        const center = box.getCenter(new THREE.Vector3());
+
+                        // Position model
+                        model.position.x = -center.x + fighters[corner].position;
+                        model.position.y = -box.min.y;  // Place on ground
+                        model.position.z = -center.z;
+
+                        // Rotate model
+                        model.rotation.y = fighters[corner].rotation;
+
+                        console.log(`Model positioned at: ${model.position.x}, ${model.position.y}, ${model.position.z}`);
+
+                        // Apply colors to model
+                        model.traverse((node) => {
+                            if (node.isMesh) {
+                                node.castShadow = true;
+                                node.receiveShadow = true;
+
+                                // Clone material to avoid affecting other instances
+                                node.material = node.material.clone();
+
+                                // Apply corner color (base tint)
+                                node.material.color.set(fighters[corner].color);
+
+                                // If shorts color is specified and material name contains "shorts" or "pants"
+                                // you can apply custom color here
+                                if (shortsColor && node.name && 
+                                    (node.name.toLowerCase().includes('short') || 
+                                     node.name.toLowerCase().includes('pant'))) {
+                                    node.material.color.set(shortsColor);
+                                    console.log(`Applied shorts color ${shortsColor} to ${node.name}`);
+                                }
+                            }
+                        });
+
+                        // Add model to scene
+                        scene.add(model);
+
+                        // Setup animation if available
+                        if (gltf.animations && gltf.animations.length > 0) {
+                            fighters[corner].mixer = new THREE.AnimationMixer(model);
+                            fighters[corner].action = fighters[corner].mixer.clipAction(gltf.animations[0]);
+                            fighters[corner].action.setLoop(THREE.LoopRepeat);
+                            fighters[corner].action.play();
+                            console.log(`Animation started for corner ${corner}`);
+                        }
+
+                        // Hide loading indicator
+                        loadingIndicator.classList.remove('active');
+                        console.log(`✅ Fighter ${fighterId} loaded successfully for corner ${corner}`);
+                    },
+                    (progress) => {
+                        // Optional: show loading progress
+                        console.log(`Loading progress: ${(progress.loaded / progress.total * 100).toFixed(0)}%`);
+                    },
+                    (error) => {
+                        console.error(`Error loading model for corner ${corner}:`, error);
+                        loadingIndicator.classList.remove('active');
+                        alert(`Failed to load 3D model: ${modelFilename}\n\nError: ${error.message}`);
+                    }
+                );
+
+            } catch (error) {
+                console.error(`Error in loadFighterModel for corner ${corner}:`, error);
+                loadingIndicator.classList.remove('active');
+                alert(`Failed to load fighter: ${error.message}`);
+            }
+        }
+
+        // =====================================================
+        // ANIMATION LOOP
+        // =====================================================
+        const clock = new THREE.Clock();
+        
+        function animate() {
+            requestAnimationFrame(animate);
+            
+            const delta = clock.getDelta();
+            
+            // Update animations
+            if (fighters.A.mixer) fighters.A.mixer.update(delta);
+            if (fighters.B.mixer) fighters.B.mixer.update(delta);
+            
+            controls.update();
+            renderer.render(scene, camera);
+        }
+        animate();
+
+        // =====================================================
+        // UI CONTROLS
+        // =====================================================
+        
+        // 3D Preview Controls
+        document.getElementById('preview-play').addEventListener('click', () => {
+            if (fighters.A.action) fighters.A.action.paused = false;
+            if (fighters.B.action) fighters.B.action.paused = false;
+        });
+
+        document.getElementById('preview-pause').addEventListener('click', () => {
+            if (fighters.A.action) fighters.A.action.paused = true;
+            if (fighters.B.action) fighters.B.action.paused = true;
+        });
+
+        document.getElementById('preview-reset').addEventListener('click', () => {
+            camera.position.set(0, 1.5, 25);
+            controls.target.set(0, 1, 0);
+            controls.update();
+        });
+
+        // Toggle 3D view
+        let is3DVisible = true;
+        document.getElementById('toggle-3d').addEventListener('click', () => {
+            is3DVisible = !is3DVisible;
+            canvasContainer.classList.toggle('hidden');
+            document.getElementById('toggle-3d').textContent = is3DVisible ? 'Hide 3D View' : 'Show 3D View';
+        });
+
+        // Handle window resize
+        window.addEventListener('resize', () => {
+            camera.aspect = canvasContainer.clientWidth / canvasContainer.clientHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(canvasContainer.clientWidth, canvasContainer.clientHeight);
+        });
+
+        // =====================================================
+        // FIGHTER SELECTION
+        // =====================================================
+        
+        const fighterASelect = document.getElementById('fighter-a');
+        const fighterBSelect = document.getElementById('fighter-b');
+        
+        // Update fighter labels AND load 3D models when selections change
+        fighterASelect.addEventListener('change', async (e) => {
+            const fighterId = e.target.value;
+            const label = document.getElementById('label-fighter-a');
+            label.textContent = e.target.options[e.target.selectedIndex].text || 'Select Red Corner';
+            
+            // Load 3D model for Fighter A
+            if (fighterId) {
+                await loadFighterModel(fighterId, 'A');
+            }
+            
+            checkFightReady();
+        });
+        
+        fighterBSelect.addEventListener('change', async (e) => {
+            const fighterId = e.target.value;
+            const label = document.getElementById('label-fighter-b');
+            label.textContent = e.target.options[e.target.selectedIndex].text || 'Select Blue Corner';
+            
+            // Load 3D model for Fighter B
+            if (fighterId) {
+                await loadFighterModel(fighterId, 'B');
+            }
+            
+            checkFightReady();
+        });
+
+        // Load fighters from API and populate dropdowns
+        async function loadFighters() {
+            try {
+                const response = await fetch('/api/fighters');
+                const fighters = await response.json();
+                
+                fighters.forEach(fighter => {
+                    const optionA = document.createElement('option');
+                    optionA.value = fighter.id;
+                    optionA.textContent = fighter.name;
+                    fighterASelect.appendChild(optionA);
+                    
+                    const optionB = document.createElement('option');
+                    optionB.value = fighter.id;
+                    optionB.textContent = fighter.name;
+                    fighterBSelect.appendChild(optionB);
+                });
+                
+                console.log(`Loaded ${fighters.length} fighters`);
+            } catch (error) {
+                console.error('Error loading fighters:', error);
+                alert('Failed to load fighters list');
+            }
+        }
+
+        // Enable fight button when both fighters selected
+        function checkFightReady() {
+            const fightBtn = document.getElementById('fight-btn');
+            const ready = fighterASelect.value && fighterBSelect.value && 
+                          fighterASelect.value !== fighterBSelect.value;
+            fightBtn.disabled = !ready;
+        }
+
+        // Initialize: Load fighters list
+        loadFighters();
+
+        // Fight button handler (you'll need to implement this based on your existing code)
+        document.getElementById('fight-btn').addEventListener('click', () => {
+            const fighterA = fighterASelect.value;
+            const fighterB = fighterBSelect.value;
+            
+            if (!fighterA || !fighterB || fighterA === fighterB) return;
+            
+            console.log(`Starting fight: ${fighterA} vs ${fighterB}`);
+            alert(`Fight feature: ${fighterA} vs ${fighterB}\n\nIntegrate with your existing fight simulation here!`);
+        });
+
+    </script>
+</body>
+</html>

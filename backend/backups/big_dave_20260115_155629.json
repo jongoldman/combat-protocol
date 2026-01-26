@@ -1,0 +1,47 @@
+{
+  "id": "big_dave",
+  "name": "Big Dave",
+  "discipline": "Muay Thai",
+  "physical": {
+    "height_cm": 185.0,
+    "weight_kg": 105.0,
+    "age": 30,
+    "muscle_mass_percent": 85.0,
+    "fast_twitch_ratio": 55.0
+  },
+  "training": {
+    "striking_hours": 1000,
+    "clinch_hours": 600,
+    "cardio_hours": 800,
+    "sparring_hours": 700
+  },
+  "style": {
+    "body_attack_preference": 50.0,
+    "leg_kick_tendency": 60.0,
+    "power_punch_frequency": 55.0
+  },
+  "durability": {
+    "head_durability": 80.0,
+    "body_durability": 80.0,
+    "leg_durability": 75.0,
+    "recovery_rate": 70.0
+  },
+  "personality": {
+    "trash_talk_frequency": 60.0,
+    "confidence": 70.0,
+    "aggression": 65.0,
+    "respect": 75.0,
+    "humor": 50.0,
+    "verbosity": 55.0
+  },
+  "derived_stats": {
+    "power": 47.5,
+    "speed": 52.8,
+    "cardio": 59.1,
+    "chin": 78.3,
+    "technique": 56.9,
+    "clinch": 60.0,
+    "defense": 51.9,
+    "fight_iq": 62.0
+  }
+}

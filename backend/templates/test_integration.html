@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Model Integration Test</title>
+    <style>
+        body {
+            font-family: monospace;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #1a1a2e;
+            color: #00ff88;
+        }
+        h1 { color: #ff6b35; }
+        .test-section {
+            background: rgba(255,255,255,0.05);
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            border: 1px solid rgba(0,255,136,0.3);
+        }
+        .test-title {
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 10px;
+            color: #00ff88;
+        }
+        .test-result {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+        }
+        .pass { background: rgba(0,255,0,0.1); border: 1px solid #0f0; }
+        .fail { background: rgba(255,0,0,0.1); border: 1px solid #f00; color: #ff6666; }
+        .info { background: rgba(0,136,255,0.1); border: 1px solid #08f; color: #66ccff; }
+        button {
+            background: #00ff88;
+            color: #1a1a2e;
+            border: none;
+            padding: 10px 20px;
+            margin: 5px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        button:hover { background: #00cc6a; }
+        pre {
+            background: rgba(0,0,0,0.3);
+            padding: 10px;
+            border-radius: 4px;
+            overflow-x: auto;
+            color: #fff;
+        }
+        .model-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 10px;
+            margin-top: 10px;
+        }
+        .model-item {
+            background: rgba(255,255,255,0.05);
+            padding: 10px;
+            border-radius: 4px;
+            border: 1px solid rgba(0,255,136,0.2);
+        }
+    </style>
+</head>
+<body>
+    <h1>🧪 Combat Protocol - Integration Test Suite</h1>
+    
+    <div class="test-section">
+        <div class="test-title">Test 1: API Connectivity</div>
+        <button onclick="testAPIConnection()">Run Test</button>
+        <div id="test1-result"></div>
+    </div>
+
+    <div class="test-section">
+        <div class="test-title">Test 2: Fighter List</div>
+        <button onclick="testFighterList()">Load Fighters</button>
+        <div id="test2-result"></div>
+    </div>
+
+    <div class="test-section">
+        <div class="test-title">Test 3: Fighter Data with model_3d Field</div>
+        <button onclick="testFighterData()">Check Random Fighter</button>
+        <div id="test3-result"></div>
+    </div>
+
+    <div class="test-section">
+        <div class="test-title">Test 4: Model Library</div>
+        <button onclick="testModelLibrary()">Load Model Library</button>
+        <div id="test4-result"></div>
+    </div>
+
+    <div class="test-section">
+        <div class="test-title">Test 5: Model File Accessibility</div>
+        <button onclick="testModelFiles()">Verify Model Files</button>
+        <div id="test5-result"></div>
+    </div>
+
+    <div class="test-section">
+        <div class="test-title">Test 6: 3D Loader Compatibility</div>
+        <button onclick="testThreeJS()">Check Three.js</button>
+        <div id="test6-result"></div>
+    </div>
+
+    <script>
+        let fightersList = [];
+        let modelLibrary = {};
+
+        async function testAPIConnection() {
+            const result = document.getElementById('test1-result');
+            result.innerHTML = '<div class="test-result info">Testing...</div>';
+            
+            try {
+                const response = await fetch('/api/fighters');
+                if (response.ok) {
+                    result.innerHTML = '<div class="test-result pass">✅ PASS: API is accessible</div>';
+                } else {
+                    result.innerHTML = `<div class="test-result fail">❌ FAIL: API returned ${response.status}</div>`;
+                }
+            } catch (error) {
+                result.innerHTML = `<div class="test-result fail">❌ FAIL: ${error.message}</div>`;
+            }
+        }
+
+        async function testFighterList() {
+            const result = document.getElementById('test2-result');
+            result.innerHTML = '<div class="test-result info">Loading fighters...</div>';
+            
+            try {
+                const response = await fetch('/api/fighters');
+                const fighters = await response.json();
+                fightersList = fighters;
+                
+                if (fighters.length === 0) {
+                    result.innerHTML = '<div class="test-result fail">⚠️ WARNING: No fighters found</div>';
+                } else {
+                    result.innerHTML = `
+                        <div class="test-result pass">✅ PASS: Loaded ${fighters.length} fighters</div>
+                        <pre>${JSON.stringify(fighters, null, 2)}</pre>
+                    `;
+                }
+            } catch (error) {
+                result.innerHTML = `<div class="test-result fail">❌ FAIL: ${error.message}</div>`;
+            }
+        }
+
+        async function testFighterData() {
+            const result = document.getElementById('test3-result');
+            
+            if (fightersList.length === 0) {
+                result.innerHTML = '<div class="test-result fail">❌ Run Test 2 first to load fighters</div>';
+                return;
+            }
+            
+            result.innerHTML = '<div class="test-result info">Checking fighter data...</div>';
+            
+            try {
+                // Pick a random fighter
+                const randomFighter = fightersList[Math.floor(Math.random() * fightersList.length)];
+                const response = await fetch(`/api/fighter/${randomFighter.id}`);
+                const fighterData = await response.json();
+                
+                const hasModel3D = fighterData.model_3d !== undefined;
+                const hasShortsColor = fighterData.shorts_color !== undefined;
+                
+                let resultHTML = '';
+                if (hasModel3D) {
+                    resultHTML += `<div class="test-result pass">✅ PASS: Fighter has model_3d field: "${fighterData.model_3d}"</div>`;
+                } else {
+                    resultHTML += `<div class="test-result fail">⚠️ WARNING: Fighter missing model_3d field (will use default)</div>`;
+                }
+                
+                if (hasShortsColor) {
+                    resultHTML += `<div class="test-result pass">✅ PASS: Fighter has shorts_color: "${fighterData.shorts_color}"</div>`;
+                } else {
+                    resultHTML += `<div class="test-result info">ℹ️ INFO: No shorts_color (will use corner color)</div>`;
+                }
+                
+                resultHTML += `<pre>${JSON.stringify(fighterData, null, 2)}</pre>`;
+                result.innerHTML = resultHTML;
+                
+            } catch (error) {
+                result.innerHTML = `<div class="test-result fail">❌ FAIL: ${error.message}</div>`;
+            }
+        }
+
+        async function testModelLibrary() {
+            const result = document.getElementById('test4-result');
+            result.innerHTML = '<div class="test-result info">Loading model library...</div>';
+            
+            try {
+                const response = await fetch('/static/models/model_library.json');
+                const library = await response.json();
+                modelLibrary = library;
+                
+                const modelCount = Object.keys(library).length;
+                
+                let html = `<div class="test-result pass">✅ PASS: Model library loaded with ${modelCount} models</div>`;
+                html += '<div class="model-list">';
+                
+                for (const [filename, data] of Object.entries(library)) {
+                    html += `
+                        <div class="model-item">
+                            <strong>${data.display_name}</strong><br>
+                            <small>${filename}</small><br>
+                            Style: ${data.fighting_style}<br>
+                            Body: ${data.body_type}
+                        </div>
+                    `;
+                }
+                
+                html += '</div>';
+                result.innerHTML = html;
+                
+            } catch (error) {
+                result.innerHTML = `<div class="test-result fail">❌ FAIL: ${error.message}</div>`;
+            }
+        }
+
+        async function testModelFiles() {
+            const result = document.getElementById('test5-result');
+            
+            if (Object.keys(modelLibrary).length === 0) {
+                result.innerHTML = '<div class="test-result fail">❌ Run Test 4 first to load model library</div>';
+                return;
+            }
+            
+            result.innerHTML = '<div class="test-result info">Checking model file accessibility...</div>';
+            
+            let html = '';
+            let passCount = 0;
+            let failCount = 0;
+            
+            for (const filename of Object.keys(modelLibrary)) {
+                try {
+                    const response = await fetch(`/static/models/${filename}`, { method: 'HEAD' });
+                    if (response.ok) {
+                        html += `<div class="test-result pass">✅ ${filename} - Accessible</div>`;
+                        passCount++;
+                    } else {
+                        html += `<div class="test-result fail">❌ ${filename} - ${response.status}</div>`;
+                        failCount++;
+                    }
+                } catch (error) {
+                    html += `<div class="test-result fail">❌ ${filename} - ${error.message}</div>`;
+                    failCount++;
+                }
+            }
+            
+            const summary = failCount === 0 
+                ? `<div class="test-result pass">✅ PASS: All ${passCount} models accessible</div>`
+                : `<div class="test-result fail">⚠️ WARNING: ${failCount} models not accessible</div>`;
+            
+            result.innerHTML = summary + html;
+        }
+
+        async function testThreeJS() {
+            const result = document.getElementById('test6-result');
+            result.innerHTML = '<div class="test-result info">Testing Three.js loader...</div>';
+            
+            try {
+                // Test if Three.js can be loaded from CDN
+                const scriptTest = document.createElement('script');
+                scriptTest.type = 'module';
+                scriptTest.textContent = `
+                    import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js';
+                    import { GLTFLoader } from 'https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/loaders/GLTFLoader.js';
+                    window.THREE_TEST_SUCCESS = true;
+                    window.THREE_VERSION = THREE.REVISION;
+                `;
+                document.head.appendChild(scriptTest);
+                
+                // Wait for script to execute
+                await new Promise(resolve => setTimeout(resolve, 1000));
+                
+                if (window.THREE_TEST_SUCCESS) {
+                    result.innerHTML = `
+                        <div class="test-result pass">✅ PASS: Three.js loaded (v${window.THREE_VERSION})</div>
+                        <div class="test-result pass">✅ PASS: GLTFLoader available</div>
+                        <div class="test-result info">ℹ️ Ready to load 3D models!</div>
+                    `;
+                } else {
+                    throw new Error('Three.js script did not execute');
+                }
+                
+            } catch (error) {
+                result.innerHTML = `
+                    <div class="test-result fail">❌ FAIL: ${error.message}</div>
+                    <div class="test-result info">ℹ️ This test may fail in some browsers due to module import restrictions. If the /preview page works, Three.js is fine.</div>
+                `;
+            }
+        }
+
+        // Auto-run basic tests on load
+        window.addEventListener('load', () => {
+            console.log('Combat Protocol Integration Test Suite loaded');
+            console.log('Click buttons to run individual tests');
+        });
+    </script>
+</body>
+</html>

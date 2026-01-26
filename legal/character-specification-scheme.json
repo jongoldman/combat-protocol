@@ -1,0 +1,44 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "VirtualCharacterCompliance",
+  "description": "Standardized metadata for digital twin identity and licensing audit",
+  "type": "object",
+  "required": ["identity", "modalities", "compliance_attestation"],
+  "properties": {
+    "identity": {
+      "type": "object",
+      "properties": {
+        "uuid": { "type": "string", "format": "uuid" },
+        "internal_name": { "type": "string" },
+        "is_public_figure_base": { "type": "boolean" },
+        "intended_persona_id": { "type": "string", "description": "e.g., 'Historical Figure - Elvis' or 'Original Character'" }
+      }
+    },
+    "modalities": {
+      "type": "object",
+      "properties": {
+        "visual_hash": { "type": "string", "description": "SHA-256 of the 3D mesh/texture bake" },
+        "voice_embedding_id": { "type": "string", "description": "Reference to the latent vector from the voice encoder" },
+        "training_data_source": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "licensing": {
+      "type": "object",
+      "properties": {
+        "license_status": { "enum": ["Original", "Licensed", "Fair_Use_Parody", "Pending"] },
+        "licensor_agency": { "type": "string", "default": "N/A" },
+        "agreement_ref": { "type": "string" },
+        "expiration_date": { "type": "string", "format": "date" }
+      }
+    },
+    "compliance_attestation": {
+      "type": "object",
+      "properties": {
+        "user_confirmed_legal_rights": { "type": "boolean" },
+        "timestamp": { "type": "string", "format": "date-time" },
+        "automated_likeness_score": { "type": "number", "minimum": 0, "maximum": 1 }
+      }
+    }
+  }
+}
+
