@@ -479,32 +479,144 @@ flowchart LR
 
 ## Deployment
 
-### Backend Deployment
+Combat Protocol currently maintains **two parallel production deployments** serving different versions of the application:
 
-**Server:** Flask application running on production server  
-**URL:** https://combatprotocol.com (backend API)  
-**Port:** Standard HTTP/HTTPS  
-**Static Assets:** Served from `/static` directory  
-**Deployment Config:** `backend/Procfile` for platform deployment
+### Deployment Overview
 
-### Frontend Deployment
+| Aspect | V1 (Legacy) | V2 (Current) |
+|--------|-------------|--------------|
+| **URL** | https://combatprotocol.com/ | https://combatprotocol.com/v2/ |
+| **Architecture** | Server-rendered Flask templates | React SPA + REST API |
+| **Version** | 0.2.8 | 0.2.9+ |
+| **Status** | Production (Legacy) | Production (Active Development) |
+| **Frontend** | Jinja2 templates in `backend/templates/` | React components in `frontend/src/` |
+| **Build Process** | No build step (served directly) | Vite build → `frontend/dist/` → `backend/static/v2/` |
+| **Primary File** | `backend/app_v1.py` + `backend/templates/index.html` | `backend/app.py` + React SPA |
 
-**Build Tool:** Vite production build  
-**Output:** `frontend/dist/`  
-**Deployment:** Static files copied to backend `static/v2/`  
-**Access URL:** https://combatprotocol.com/
+### V1 Deployment (Flask Server-Rendered)
+
+**Current Version:** 0.2.8  
+**Access URL:** https://combatprotocol.com/  
+**Architecture:** Traditional server-rendered web application
+
+**Characteristics:**
+- **Template Engine:** Jinja2 templates served by Flask
+- **Location:** `backend/templates/index.html`, `index_v1.html`
+- **Application:** `backend/app_v1.py` (legacy) or routes in `backend/app.py`
+- **Rendering:** Full page renders on server, minimal client-side JavaScript
+- **3D Integration:** Three.js embedded directly in templates
+- **State Management:** Server-side session management
+- **Deployment:** Direct Flask application serving
+
+**Use Case:** Original implementation, maintained for backwards compatibility and as a fallback.
+
+### V2 Deployment (React SPA)
+
+**Current Version:** 0.2.9+  
+**Access URL:** https://combatprotocol.com/v2/  
+**Architecture:** Modern single-page application with REST API
+
+**Characteristics:**
+- **Frontend Framework:** React 18 with Vite build tooling
+- **Source Location:** `frontend/src/` (React components)
+- **Build Output:** `frontend/dist/` → deployed to `backend/static/v2/`
+- **API Backend:** `backend/app.py` serves RESTful endpoints
+- **Rendering:** Client-side rendering with dynamic updates
+- **3D Integration:** Three.js via React components (`ThreeJsViewer.jsx`)
+- **State Management:** React hooks and client-side state
+- **Real-time Updates:** Server-Sent Events (SSE) for live fight streaming
+- **Deployment:** Vite production build copied to Flask static directory
+
+**Use Case:** Active development version with modern architecture, better performance, and enhanced features.
+
+### Version Management
+
+The repository uses a **dual-version system** to track both deployments independently:
+
+```bash
+# At repository root
+VERSION_V1    # Flask server-rendered version (e.g., 0.2.8)
+VERSION_V2    # React SPA version (e.g., 0.2.9)
+```
+
+**Version Bumping:**
+```bash
+# Manually bump V1 (rare, for legacy updates)
+./scripts/bump-version.py v1 patch
+
+# Auto-bump V2 via git pre-commit hook (default)
+# Or manually: ./scripts/bump-version.py v2 patch
+```
+
+The version bump script (`scripts/bump-version.py`) automatically updates:
+- Version files (`VERSION_V1` or `VERSION_V2`)
+- Python source files (`__version__` or `VERSION` constants)
+- Frontend package.json (V2 only)
+- Documentation files
+- HTML templates with version displays
+
+### Build and Deployment Workflow
+
+**V2 Development Workflow:**
+```bash
+# 1. Develop in frontend/
+cd frontend
+npm run dev    # Vite dev server at localhost:5173
+
+# 2. Build for production
+npm run build  # Outputs to frontend/dist/
+
+# 3. Deploy to backend static directory
+cp -r frontend/dist/* backend/static/v2/
+
+# 4. Commit (auto-bumps V2 version via pre-commit hook)
+git add .
+git commit -m "feat: new feature"
+
+# 5. Push to production
+git push origin main
+```
+
+**V1 Updates (Rare):**
+```bash
+# 1. Edit templates in backend/templates/
+# 2. Manually bump version
+./scripts/bump-version.py v1 patch
+
+# 3. Commit and push
+git commit -m "fix: v1 template update"
+git push origin main
+```
+
+### Backend Deployment Configuration
+
+**Server:** Flask application running on production hosting platform  
+**Port:** Standard HTTP/HTTPS (80/443)  
+**Deployment Config:** `backend/Procfile` for platform deployment (Heroku/Render/similar)  
+**Static Assets:** 
+- V1 templates: `backend/templates/`
+- V2 SPA: `backend/static/v2/`
+- 3D models: `backend/static/models/`
+- Audio: `backend/static/sounds/`
 
 ### Environment Configuration
 
-The API client (`frontend/src/api.js`) handles environment-aware endpoint configuration:
-- **Development:** `http://localhost:5000`
-- **Production:** `https://combatprotocol.com`
+The V2 API client (`frontend/src/api.js`) handles environment-aware endpoint configuration:
+- **Development:** `http://localhost:5000` (backend dev server)
+- **Production:** `https://combatprotocol.com` (production API)
 
 ### Version Control
 
 **Repository:** https://github.com/jongoldman/combat-protocol  
 **Structure:** Unified monorepo with frontend and backend  
-**Branches:** Main branch for production, feature branches for development
+**Branches:** Main branch for production, feature branches for development  
+**Version Tracking:** Dual-version system (VERSION_V1 and VERSION_V2)
+
+### Migration Path
+
+**Current State:** Both V1 and V2 run in parallel production  
+**Future Plan:** Phase out V1 once V2 achieves feature parity and stability  
+**Timeline:** TBD based on V2 maturity and user adoption
 
 ---
 
@@ -518,6 +630,8 @@ The API client (`frontend/src/api.js`) handles environment-aware endpoint config
 |-----------|-------------|-------|
 | **Root Level** | | |
 | `README.md` | Main project README and overview | Project entry point |
+| `VERSION_V1` | Version tracking for Flask server-rendered deployment | V1 version file |
+| `VERSION_V2` | Version tracking for React SPA deployment | V2 version file |
 | `complete-migration.sh` | Script for completing repository migration to monorepo | Migration tool |
 | `export-git-history.sh` | Script for exporting git history during migration | Migration tool |
 | `migrate-to-monorepo.sh` | Main monorepo migration script | Migration tool |
@@ -643,6 +757,7 @@ The API client (`frontend/src/api.js`) handles environment-aware endpoint config
 | **Research Papers** | | |
 | `papers/Multi-person Physics-based Pose Estimation for Combat Sports - 2504.08175v1.pdf` | Academic paper on multi-person pose estimation for combat sports | Research reference |
 | **Scripts** | | |
+| `scripts/bump-version.py` | Python script for bumping V1 or V2 version numbers | Version management tool |
 | `scripts/git-pull.sh` | Utility script for git pull operations | Development utility |
 
 ---

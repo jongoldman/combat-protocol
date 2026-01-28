@@ -1,0 +1,33 @@
+#!/bin/bash
+# Git pre-commit hook: Auto-bump V2 version on every commit
+# 
+# This hook automatically bumps the V2 (React SPA) version on each commit.
+# To bump V1 manually, run: ./scripts/bump-version.py v1 patch
+
+# Get repo root
+REPO_ROOT=$(git rev-parse --show-toplevel)
+
+# Check if VERSION_V2 exists
+if [ ! -f "$REPO_ROOT/VERSION_V2" ]; then
+    echo "WARNING: VERSION_V2 file not found, skipping auto-bump"
+    exit 0
+fi
+
+# Run version bump script for V2
+echo "Auto-bumping V2 version..."
+python3 "$REPO_ROOT/scripts/bump-version.py" v2 patch
+
+# Check if bump was successful
+if [ $? -ne 0 ]; then
+    echo "ERROR: Version bump failed"
+    exit 1
+fi
+
+# Stage the updated version files
+git add "$REPO_ROOT/VERSION_V2"
+git add "$REPO_ROOT/frontend/package.json" 2>/dev/null
+git add "$REPO_ROOT/backend/app.py" 2>/dev/null
+git add "$REPO_ROOT/docs/COMBAT_PROTOCOL_SYSTEM_DOCUMENTATION.md" 2>/dev/null
+
+echo ""
+exit 0
