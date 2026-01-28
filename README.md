@@ -50,3 +50,4 @@ See `docs/` for detailed system documentation and git history.
 ## Deployment
 
 Production site: https://combatprotocol.com/v2/
+# Test commit for version hook
