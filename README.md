@@ -51,3 +51,4 @@ See `docs/` for detailed system documentation and git history.
 
 Production site: https://combatprotocol.com/v2/
 # Test commit for version hook
+# Test commit for version bump
