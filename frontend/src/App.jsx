@@ -7,6 +7,7 @@ import ThreeJsViewer from './ThreeJsViewer'
 //import ThreeJsViewer from './ThreeJsTest'
 
 import { fetchFighters, transformFighterData } from './api'
+import packageJson from '../package.json'
 import './App.css'
 
 function App() {
@@ -90,6 +91,7 @@ function App() {
         <header className="app-header">
           <h1>⚔️ COMBAT PROTOCOL</h1>
           <p className="subtitle">Loading fighters...</p>
+          <span className="version-badge">v{packageJson.version}</span>
         </header>
         <div className="loading-spinner">
           <div className="spinner"></div>
@@ -104,6 +106,7 @@ function App() {
         <header className="app-header">
           <h1>⚔️ COMBAT PROTOCOL</h1>
           <p className="subtitle">Connection Error</p>
+          <span className="version-badge">v{packageJson.version}</span>
         </header>
         <div className="error-message">
           <p>{error}</p>
@@ -120,6 +123,7 @@ function App() {
       <header className="app-header">
         <h1>⚔️ COMBAT PROTOCOL</h1>
         <p className="subtitle">Physics-Based Fighting Simulation</p>
+        <span className="version-badge">v{packageJson.version}</span>
       </header>
 
       {!fightMode ? (
