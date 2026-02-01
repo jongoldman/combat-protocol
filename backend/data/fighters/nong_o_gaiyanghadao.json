@@ -1,0 +1,48 @@
+{
+  "id": "fighter_002",
+  "name": "Nong-O Gaiyanghadao",
+  "discipline": "Muay Thai",
+  "physical": {
+    "height_cm": 178,
+    "weight_kg": 70,
+    "age": 28,
+    "muscle_mass_percent": 65,
+    "fast_twitch_ratio": 75
+  },
+  "training": {
+    "striking_hours": 700,
+    "clinch_hours": 300,
+    "cardio_hours": 800,
+    "sparring_hours": 700
+  },
+  "style": {
+    "body_attack_preference": 30.0,
+    "leg_kick_tendency": 20.0,
+    "power_punch_frequency": 40.0
+  },
+  "durability": {
+    "head_durability": 70.0,
+    "body_durability": 70.0,
+    "leg_durability": 70.0,
+    "recovery_rate": 60.0
+  },
+  "personality": {
+    "trash_talk_frequency": 50.0,
+    "confidence": 60.0,
+    "aggression": 50.0,
+    "respect": 60.0,
+    "humor": 40.0,
+    "verbosity": 50.0
+  },
+  "derived_stats": {
+    "power": 33.8,
+    "speed": 64.8,
+    "cardio": 61.8,
+    "chin": 74.8,
+    "technique": 41.6,
+    "clinch": 30.0,
+    "defense": 53.1,
+    "fight_iq": 51.0
+  },
+  "model_3d": "Chapa-Giratoria_blender.glb"
+}
