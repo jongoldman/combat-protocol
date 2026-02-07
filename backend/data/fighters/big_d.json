@@ -1,0 +1,48 @@
+{
+  "id": "big_d",
+  "name": "Big D",
+  "discipline": "Muay Thai",
+  "physical": {
+    "height_cm": 185.0,
+    "weight_kg": 100.0,
+    "age": 30,
+    "muscle_mass_percent": 85.0,
+    "fast_twitch_ratio": 65.0
+  },
+  "training": {
+    "striking_hours": 1000,
+    "clinch_hours": 600,
+    "cardio_hours": 800,
+    "sparring_hours": 700
+  },
+  "style": {
+    "body_attack_preference": 50.0,
+    "leg_kick_tendency": 60.0,
+    "power_punch_frequency": 55.0
+  },
+  "durability": {
+    "head_durability": 75.0,
+    "body_durability": 80.0,
+    "leg_durability": 75.0,
+    "recovery_rate": 70.0
+  },
+  "personality": {
+    "trash_talk_frequency": 60.0,
+    "confidence": 70.0,
+    "aggression": 65.0,
+    "respect": 55.0,
+    "humor": 50.0,
+    "verbosity": 60.0
+  },
+  "derived_stats": {
+    "power": 46.2,
+    "speed": 56.2,
+    "cardio": 58.0,
+    "chin": 77.7,
+    "technique": 58.1,
+    "clinch": 60.0,
+    "defense": 52.3,
+    "fight_iq": 62.0
+  },
+  "model_3d": "Fist Fight B_blender.glb"
+}

@@ -30,12 +30,6 @@ Thumbs.db
 .env.local
 .env.*.local
 
-# Custom generated fighters
-# Keep only the default seed fighters in git
-data/fighters/*.json
-!data/fighters/somchai_petchyindee.json
-!data/fighters/nong_o_gaiyanghadao.json
-
 # Generated fighter images
 static/images/fighters/*.png
 static/images/fighters/*.jpg

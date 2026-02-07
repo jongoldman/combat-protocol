@@ -1,0 +1,48 @@
+{
+  "id": "jake_razor_thompson",
+  "name": "Jake 'Razor' Thompson",
+  "discipline": "Boxing",
+  "physical": {
+    "height_cm": 178.0,
+    "weight_kg": 68.0,
+    "age": 26,
+    "muscle_mass_percent": 68.0,
+    "fast_twitch_ratio": 85.0
+  },
+  "training": {
+    "striking_hours": 950,
+    "clinch_hours": 200,
+    "cardio_hours": 800,
+    "sparring_hours": 650
+  },
+  "style": {
+    "body_attack_preference": 35.0,
+    "leg_kick_tendency": 15.0,
+    "power_punch_frequency": 80.0
+  },
+  "durability": {
+    "head_durability": 65.0,
+    "body_durability": 60.0,
+    "leg_durability": 75.0,
+    "recovery_rate": 75.0
+  },
+  "personality": {
+    "trash_talk_frequency": 30.0,
+    "confidence": 80.0,
+    "aggression": 75.0,
+    "respect": 70.0,
+    "humor": 45.0,
+    "verbosity": 35.0
+  },
+  "derived_stats": {
+    "power": 34.0,
+    "speed": 67.7,
+    "cardio": 59.8,
+    "chin": 75.3,
+    "technique": 57.6,
+    "clinch": 20.0,
+    "defense": 50.1,
+    "fight_iq": 54.0
+  },
+  "model_3d": "Punching_blender.glb"
+}
