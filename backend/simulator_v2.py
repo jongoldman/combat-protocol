@@ -1058,7 +1058,7 @@ class MuayThaiSimulatorV2:
         self.capsules_b.position = self.fighter_b_pos
 
         
-        for round_num in range(1, 6):
+        for round_num in range(1, 4):
             # Simulate round
             round_gen = self.simulate_round_streaming(round_num)
             
