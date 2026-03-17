@@ -910,7 +910,7 @@ class MuayThaiSimulatorV2:
         
         # Simulate round (3 minutes = 180 seconds, or shortened for demo)
         round_duration = 180 if self.real_time else 7
-        exchanges_per_round = 30
+        exchanges_per_round = 8
         time_per_exchange = round_duration / exchanges_per_round
         
         for _ in range(exchanges_per_round):
@@ -1072,7 +1072,7 @@ class MuayThaiSimulatorV2:
                 rounds.append(round_result)
             
             # Check for TKO
-            if self.fighter_a_health < 20:
+            if self.fighter_a_health < 10:
                 yield MatchEndEvent(
                     event_type=EventType.MATCH_END,
                     timestamp=0,
@@ -1089,7 +1089,7 @@ class MuayThaiSimulatorV2:
                     final_scores=(0, 0, 0),
                 )
             
-            if self.fighter_b_health < 20:
+            if self.fighter_b_health < 10:
                 yield MatchEndEvent(
                     event_type=EventType.MATCH_END,
                     timestamp=0,
