@@ -685,6 +685,7 @@
                 <button class="preview-control-btn" id="preview-play">▶️ Play</button>
                 <button class="preview-control-btn" id="preview-pause">⏸️ Pause</button>
                 <button class="preview-control-btn" id="preview-reset">🔄 Reset Camera</button>
+                <button class="preview-control-btn" id="reset-fighters">👊 Reset Fighters</button>
             </div>
         </div>
 
@@ -956,6 +957,10 @@
         let modelB_offset_x = 0;
         let modelB_offset_z = 0;
 
+        // Store initial Y positions for reset
+        let modelA_initial_y = 0;
+        let modelB_initial_y = 0;
+
         const loader = new GLTFLoader();
         const modelPathA = '/static/models/Punching_blender.glb';  // Fighter A: Punching
         const modelPathB = '/static/models/Boxing_with_kick.glb';  // Fighter B: Boxing with kick
@@ -988,6 +993,7 @@
             modelA.position.y = -box.min.y;
             modelA.position.z = modelA_offset_z;
             modelA.rotation.y = Math.PI / 2;   // Face +X (toward Fighter B)
+            modelA_initial_y = modelA.position.y;  // Store for reset
             
             console.log('🔴 Fighter A INITIAL POSITION:', {
                 x: modelA.position.x,
@@ -1042,8 +1048,8 @@
             modelB.position.x = modelB_offset_x + 4;  // Right side
             modelB.position.y = -box.min.y;
             modelB.position.z = modelB_offset_z;
-            
             modelB.rotation.y = -Math.PI / 2;  // Face -X (toward Fighter A)
+            modelB_initial_y = modelB.position.y;  // Store for reset
             
             console.log('🔵 Fighter B INITIAL POSITION:', {
                 x: modelB.position.x,
@@ -1113,6 +1119,21 @@
             camera.position.set(0, 1.5, 25);
             controls.target.set(0, 1, 0);
             controls.update();
+        });
+
+        document.getElementById('reset-fighters').addEventListener('click', () => {
+            if (modelA) {
+                modelA.position.x = modelA_offset_x - 4;
+                modelA.position.y = modelA_initial_y;
+                modelA.position.z = modelA_offset_z;
+                modelA.rotation.y = Math.PI / 2;
+            }
+            if (modelB) {
+                modelB.position.x = modelB_offset_x + 4;
+                modelB.position.y = modelB_initial_y;
+                modelB.position.z = modelB_offset_z;
+                modelB.rotation.y = -Math.PI / 2;
+            }
         });
 
         // Toggle 3D view

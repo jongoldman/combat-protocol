@@ -1,7 +1,7 @@
 # Combat Protocol - System Documentation
 
-**Version:** 0.2.17+  
-**Last Updated:** February 07, 2026
+**Version:** 0.2.18+  
+**Last Updated:** March 17, 2026
 **Author:** Jon Goldman  
 **Project URL:** https://combatprotocol.com
 

@@ -909,7 +909,7 @@ class MuayThaiSimulatorV2:
         )
         
         # Simulate round (3 minutes = 180 seconds, or shortened for demo)
-        round_duration = 180 if self.real_time else 20
+        round_duration = 180 if self.real_time else 7
         exchanges_per_round = 30
         time_per_exchange = round_duration / exchanges_per_round
         

@@ -248,9 +248,9 @@ def robots():
 # Timing configuration
 TIMING = {
     'fast': {
-        'exchange_delay': 0.3,      # Seconds between exchanges
-        'round_break': 2,           # Seconds between rounds
-        'post_event_delay': 0.05,   # Small delay after each event
+        'exchange_delay': 0.05,     # Seconds between exchanges (demo mode)
+        'round_break': 1,           # Seconds between rounds (demo mode)
+        'post_event_delay': 0.02,   # Small delay after each event (demo mode)
     },
     'normal': {
         'exchange_delay': 1.0,
@@ -366,7 +366,7 @@ def simulate_fight(fighter_a_id, fighter_b_id):
             
             # If we have trash talk, give time to read it
             if trash_talk:
-                time.sleep(3)
+                time.sleep(1)
             
             # Run simulation
             last_round = 0
